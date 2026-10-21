@@ -10,7 +10,7 @@ Proyecto Django de ejemplo.
 
 > **Importante:** 
 > ```sql
-> CREATE DATABASE rg_beuty_DB;
+> CREATE DATABASE rg_beauty_DB;
 > ```
 
 ## Crear el entorno virtual
