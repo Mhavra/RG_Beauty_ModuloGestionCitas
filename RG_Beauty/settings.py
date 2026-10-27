@@ -77,7 +77,7 @@ WSGI_APPLICATION = 'RG_Beauty.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'rg_beuty_DB',
+        'NAME': 'rg_beauty_DB',
         'USER': 'root',
         'PASSWORD': '123456',
         'HOST': 'localhost',
