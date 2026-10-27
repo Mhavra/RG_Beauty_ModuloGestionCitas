@@ -33,9 +33,40 @@ class Servicio(models.Model):
         return self.nombre_servicio
 
 class Cita(models.Model):
+    fecha_cita = models.DateField
 
+    pass
+
+class Venta(models.Model):
+    cliente = models.ForeignKey(
+        Perfil,
+        on_delete=models.RESTRICT,
+        related_name= 'ventas'
+    )
     pass
 
 class Disponibilidad(models.Model):
     
+    pass
+
+class BloqueoHorario(models.Model):
+    pass
+
+class Configuracion_Sistema(models.Model):
+    pass
+
+class Pago(models.Model):
+    metodos_pago = (
+        ('efectivo', 'Efectivo en Salon'), ('debito', 'Débito en Salon'), ('credito', 'Crédito en Salon'), ('mercadopago', 'Mercado Pago'), ('webpay', 'Webpay Plus'),
+        )
+    tipos_pago = (
+        ('abono', 'Abono'), ('saldo', 'Saldo Restante en Salon'), ('total', 'Pago Total'), ('reembolso', 'Reembolso'),
+        )
+    estados_pago = (('pendiente', 'Pendiente'), ('completado', 'Completado'), ('rechazado', 'Rechazado'), ('reembolsado', 'Reembolsado'),
+        )
+    cita = models.ForeignKey(
+        Cita,
+        on_delete=models.CASCADE,
+    )
+    venta =   
     pass
