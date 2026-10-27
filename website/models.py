@@ -22,10 +22,20 @@ class Perfil(models.Model):
         return self.nombre
 
 class Servicio(models.Model):
-    pass
+    nombre_servicio = models.CharField(max_length=100)
+    precio = models.IntegerField()
+    empleado_asignado = models.ForeignKey(
+        Perfil,
+        on_delete=models.CASCADE,
+        related_name='servicio'
+    )
+    def __str__(self):
+        return self.nombre_servicio
 
 class Cita(models.Model):
+
     pass
 
 class Disponibilidad(models.Model):
+    
     pass
