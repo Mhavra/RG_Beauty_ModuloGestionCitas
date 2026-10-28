@@ -38,6 +38,9 @@ class Usuario(AbstractUser):
         verbose_name='Numero de telefono (+569)',
         help_text='Formato: +56912345678'
         )
+
+    #campo json nativo para preferencias esteticas e historial estetico
+
     #username field para que se pueda iniciar sesion con el correo electronico
     USERNAME_FIELD = 'email'
     #required fields para que se pueda crear un usuario con el correo electronico y el username
@@ -91,6 +94,7 @@ class ConfiguracionSistema(models.Model):
         else:
             return f'Configuración activa: Abono del {self.porcentaje_abono:.2f}%'
 
+
 class Servicio(models.Model):
     nombre_serv = models.CharField(max_length=100, verbose_name="Nombre del servicio")
     duracion_minutos = models.PositiveIntegerField(validators=[MinValueValidator(15)], 
@@ -106,3 +110,53 @@ class Servicio(models.Model):
             return f"{self.nombre_serv}
             ({self.duracion_minutos}min) - $
             {self.precio_serv:,.0f}"
+
+#disponibilidad horaria semanal
+class Disponibilidad(models.Model):
+    DIAS_SEMANA= (
+            ('Lunes', 'Lunes'),
+            ('Martes', 'Martes'),
+            ('Miercoles', 'Miercoles'),
+            ('Jueves', 'Jueves'),
+            ('Viernes', 'Viernes'),
+            ('Sabado', 'Sabado'),
+            ('Domingo', 'Domingo'),
+    )
+    empleado = models.ForeignKey(
+        Usuario,
+        on_delete=models.CASCADE,
+        related_name='disponibilidades',
+        limit_choices_to={'rol__in':
+                          ['profesional', 'admin']},
+                          verbose_name= "PRofesional"
+    )
+    dia_semana= models.CharField(
+        max_length=10,
+        choises= DIAS_SEMANA,
+        verbose_name= "Dia de la semana"
+        )
+    hora_inicio= models.TimeField(
+        verbose_name= "Hora de inicio"
+        )
+    hora_fin= models.TimeField(
+        verbose_name= "Hora de fin"
+        )
+    
+    class Meta: 
+        verbose_name= "Disponibilidad horaria"
+        verbose_name_plural= "Disponibilidades horarias"
+        unique_together=(
+            #este se usa para que no se repita la disponibilidad de un mismo empleado en el mismo dia y hora
+            'empleado',
+            'dia_semana',
+            'hora_inicio'
+        )
+    
+    def clean(self):
+        if self.hora_inicio and self.hora_fin and self.hora_inicio >= self.hora_fin:
+            raise ValidationError({'hora_inicio': 'La hora de inicio debe ser menor que la hora de fin.'})
+        
+    def __str__(self):
+        return f"{self.empleado_get_full_name()} - {self.dia_semana_display()}: {self.hora_inicio.strftime('%H:%M')} - {self.hora_fin.strftime('%H:%M')}"
+    
+    
