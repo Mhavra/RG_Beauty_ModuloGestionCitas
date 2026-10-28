@@ -159,4 +159,30 @@ class Disponibilidad(models.Model):
     def __str__(self):
         return f"{self.empleado_get_full_name()} - {self.dia_semana_display()}: {self.hora_inicio.strftime('%H:%M')} - {self.hora_fin.strftime('%H:%M')}"
     
-    
+#bloqueo de horarios (vacaciones, feriados, colacion, descansos)
+class BLoqueoHorario(models.Model):
+    empleado = models.ForeignKey(
+        Usuario,
+        on_delete= models.CASCADE,
+        related_name='bloqueos',
+        limit_choices_to={'rol__in': ['profesional', 'admin']},
+        verbose_name= "Profesional"
+    )
+    fecha_inicio =  models.DateField(verbose_name="Fecha/Hora inicio de bloqueo")
+    fecha_fin= models.DateField(verbose_name="Fecha/Hora fin de bloqueo")
+    motivo= models.CharField(
+        max_length=250,
+        default="Descanso / No disponible",
+        verbose_name= "Motivo del bloqueo"
+    )
+
+    class Meta:
+        verbose_name= "Bloqueo de horario"
+        verbose_name_plural= "Bloqueos de horarios"
+
+    def clean(self):
+        if self.fecha_inicio and self.fecha_fin and self.fecha_inicio >= self.fecha_fin:
+            raise ValidationError({'fecha_inicio': 'La fecha de inicio debe ser menor o igual a la fecha de fin.'})
+        
+    def __str__(self):
+        return f"Bloqueo {self.empleado.get_full_name()}: {self.fecha_inicio.strftime('%d/%m/%Y %H:%M')} al {self.fecha_fin.strftime('%d/%%m/%Y %H:%M')} - Motivo: {self.motivo}"
