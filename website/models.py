@@ -186,3 +186,13 @@ class BLoqueoHorario(models.Model):
         
     def __str__(self):
         return f"Bloqueo {self.empleado.get_full_name()}: {self.fecha_inicio.strftime('%d/%m/%Y %H:%M')} al {self.fecha_fin.strftime('%d/%%m/%Y %H:%M')} - Motivo: {self.motivo}"
+    
+#Cita /Reserva
+class Cita(models.Model):
+    ESTADOS_CITA = (
+        ('pendiente', 'Pendiente de abono'),
+        ('confirmada', 'Confirmada con abono'),
+        ('çompletada', 'Atencion completada'),
+        ('cancelada', 'Cancelada'),
+        ('finalizada', 'Finalizada'),
+    )
