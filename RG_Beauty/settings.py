@@ -77,7 +77,7 @@ WSGI_APPLICATION = 'RG_Beauty.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'rg_beuty_DB',
+        'NAME': 'rg_beauty_DB',
         'USER': 'root',
         'PASSWORD': '123456',
         'HOST': 'localhost',
@@ -126,3 +126,4 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+AUTH_USER_MODEL = 'website.Usuario'  # Indicamos que se usará el modelo de usuario personalizado
