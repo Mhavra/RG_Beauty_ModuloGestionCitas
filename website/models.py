@@ -1,8 +1,8 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
-#from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
-#from django.core.exceptions import ValidationError
-#from django.utils import timezone
+from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+
 # Create your models here.
 
 #validador de numero de telefono chileno
@@ -90,3 +90,19 @@ class ConfiguracionSistema(models.Model):
             return f'COnfiguración activa: Abono Fijo de ${self.monto_fijo_abono:,.0f} CLP'
         else:
             return f'Configuración activa: Abono del {self.porcentaje_abono:.2f}%'
+
+class Servicio(models.Model):
+    nombre_serv = models.CharField(max_length=100, verbose_name="Nombre del servicio")
+    duracion_minutos = models.PositiveIntegerField(validators=[MinValueValidator(15)], 
+    verbose_name="Duracion(minutos)", help_text="Duracion real en minutos (ej:90 oara corte, 300 para mechas).")
+    precio_serv = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)],
+    verbose_name="Precio total (CLP)")
+
+    class Meta:
+        verbose_name = "Servicio"
+        verbose_name_plural = "Servicios"
+
+        def __str__(self):
+            return f"{self.nombre_serv}
+            ({self.duracion_minutos}min) - $
+            {self.precio_serv:,.0f}"
