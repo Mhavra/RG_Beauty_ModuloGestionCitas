@@ -243,3 +243,16 @@ class Cita(models.Model):
 
     def __str__(self):
         return f"Cita #{self.id} - {self.cliente.get_full_name()} con {self.empleado.get_full_name()} ({self.fecha_hora_cita.strftime('%d/%m/%Y %H:%M')})"
+
+#Citas-servicios intermedia
+class CitaServicio(models.Model):
+    cita = models.ForeignKey(Cita, on_delete=models.CASCADE)
+    servicio = models.ForeignKey(Servicio, on_delete=models.RESTRICT)
+
+    class Meta:
+        verbose_name = "Servicio de Cita"
+        verbose_name_plural = "Servicios de Citas"
+        unique_together = ('cita', 'servicio')
+
+    def __str__(self):
+        return f"Cita #{self.cita.id} - Servicio: {self.servicio.nombre_serv}"
