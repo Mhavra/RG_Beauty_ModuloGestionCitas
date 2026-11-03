@@ -130,7 +130,7 @@ class Disponibilidad(models.Model):
         related_name='disponibilidades',
         limit_choices_to={'rol__in':
                           ['profesional', 'admin']},
-                          verbose_name= "PRofesional"
+                          verbose_name= "Profesional"
     )
     dia_semana= models.CharField(
         max_length=10,
