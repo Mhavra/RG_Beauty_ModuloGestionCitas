@@ -17,8 +17,9 @@ telefono_validator = RegexValidator(
 class Usuario(AbstractUser):
     ROLES = (
         ('cliente', 'Cliente'),
-        ('profesional', 'Profesional', 'Estilista'),
+        ('profesional', 'Profesional'),
         ('admin', 'Administradora'),
+        ('estilista', 'Estilista'),
     ),
     #email personalizado para que tengan uno unico para iniciar sesion como otra opcion
     email =models.EmailField(
@@ -160,7 +161,7 @@ class Disponibilidad(models.Model):
         return f"{self.empleado.get_full_name()} - {self.get_dia_semana_display()}: {self.hora_inicio.strftime('%H:%M')} - {self.hora_fin.strftime('%H:%M')}"
     
 #bloqueo de horarios (vacaciones, feriados, colacion, descansos)
-class BLoqueoHorario(models.Model):
+class BloqueoHorario(models.Model):
     empleado = models.ForeignKey(
         Usuario,
         on_delete= models.CASCADE,
