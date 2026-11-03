@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %} Panel de Control - RG Beauty {% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-center border-b pb-4">
+        <h2 class="text-2x1 font-serif font-bold">Panel de administración</h2>
+        <span class="text-xs bg-pink-100 text-pink-800 font-semibold px-2.5 py-1 rounded">Abono Activo: {{ config.porcentaje_abono }}%</span>
+    </div>
+    
+    <div class="bg-white p-4 rounded-x1 border space-y-3">
+        <h3 class="font-bold text-sm">Descargar Informes del Módulo de Citas</h3>
+        <form method="GET" action="" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+                <label class="block text-sm">Descargar Informes del Módulo de Citas</label>
+            </div>
+        </form>
+    </div>
+</div>
