@@ -99,9 +99,10 @@ class ConfiguracionSistema(models.Model):
 
 
 class Servicio(models.Model):
+    imagen= models.ImageField(upload_to= 'servicios/', blank= True, null= True)
     nombre_serv = models.CharField(max_length=100, verbose_name="Nombre del servicio")
     duracion_minutos = models.PositiveIntegerField(validators=[MinValueValidator(15)], 
-    verbose_name="Duracion(minutos)", help_text="Duracion real en minutos (ej:90 oara corte, 300 para mechas).")
+    verbose_name="Duracion(minutos)", help_text="Duracion real en minutos (ej: 90 para corte, 300 para mechas)")
     precio_serv = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)],
     verbose_name="Precio total (CLP)")
 
