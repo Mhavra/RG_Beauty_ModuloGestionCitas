@@ -2,12 +2,12 @@
 {% block title %}Seleccionar Servicio - RG Beauty {% endblock %}
 {% block content %}
 
-<h2 class="text-2x1 font-serif text-center font-bold mb-1">¿Cómo quieres sentirte hoy?</h2>
+<h2 class="text-2xl font-serif text-center font-bold mb-1">¿Cómo quieres sentirte hoy?</h2>
 <p class="text-center text-gray-500 text-xs mb-6">Reserva tu hora online con la duración técnica real de cada servicio.</p>
 
 <div class="space-y-3">
     {% for s in servicios %}
-    <div class="bg-white p-4 rounded-x1 border flex justify-between items-center hover:border-pink-300 transition">
+    <div class="bg-white p-4 rounded-xl border flex justify-between items-center hover:border-pink-300 transition">
         <h3 class="font-bold text-base text-gray-900">{{ s.nombre_serv }}</h3>
         <p class="text-xs text-gray-500"> {{ s.duracion_minutos }} </p>
         <div class="text-right">
