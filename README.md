@@ -1,5 +1,9 @@
 # RG_Beauty_ModuloGestionCitas
-
+Integrantes:
+Nayaret Larrondo
+Lenin Moreno
+Fram Salinas
+Francisco Urquieta 
 
 Proyecto Django de ejemplo.
 
