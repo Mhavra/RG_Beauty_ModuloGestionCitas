@@ -14,6 +14,11 @@ class RegistroClienteForm(UserCreationForm):
       max_length=50,
       widget=forms.TextInput(attrs={'class': 'form-input'}),
   )
+  rut = forms.CharField(
+    label='RUT',
+    max_length=12,
+    widget=forms.TextInput(attrs={'class': 'form-input'}),
+  )
   email = forms.EmailField(
       label='Correo Electrónico',
       widget=forms.EmailInput(attrs={'class': 'form-input'}),
@@ -28,7 +33,7 @@ class RegistroClienteForm(UserCreationForm):
 
   class Meta:
     model = Usuario
-    fields = ('first_name', 'last_name', 'email', 'telefono')
+    fields = ('first_name', 'last_name', 'rut' ,'email', 'telefono')
 
   def save(self, commit=True):
     user = super().save(commit=False)
