@@ -107,9 +107,7 @@ class Servicio(models.Model):
         verbose_name_plural = "Servicios"
 
         def __str__(self):
-            return f"{self.nombre_serv}
-            ({self.duracion_minutos}min) - $
-            {self.precio_serv:,.0f}"
+            return f"{self.nombre_serv}({self.duracion_minutos}min) - ${self.precio_serv:,.0f}"
 
 #disponibilidad horaria semanal
 class Disponibilidad(models.Model):
@@ -192,7 +190,56 @@ class Cita(models.Model):
     ESTADOS_CITA = (
         ('pendiente', 'Pendiente de abono'),
         ('confirmada', 'Confirmada con abono'),
-        ('çompletada', 'Atencion completada'),
+        ('completada', 'Atencion completada'),
         ('cancelada', 'Cancelada'),
-        ('finalizada', 'Finalizada'),
+        ('no_asistio', 'No asistio'),
     )
+    ESTADOS_ABONO = (
+        ('pendiente', 'Pendiente'),
+        ('pagado', 'Pagado'),
+        ('reembolsado', 'Reembolsado'),
+    )
+    cliente = models.ForeignKey(
+        Usuario,
+        on_delete=models.RESTRICT,
+        related_name='citas_cliente',
+        limit_choices_to={'rol': 'cliente'},
+        verbose_name="Cliente"
+    )
+    empleado = models.ForeignKey(
+        Usuario,
+        on_delete=models.RESTRICT,
+        related_name='citas_atendidas',
+        limit_choices_to={'rol__in': ['profesional', 'admin']},
+        verbose_name="Profesional Atendente"
+    )
+    servicios = models.ManyToManyField(Servicio, through='CitaServicio', verbose_name="Servicios Reservados")
+
+    fecha_hora_cita = models.DateTimeField(verbose_name="Fecha y Hora de Cita")
+    estado = models.CharField(max_length=20, choices=ESTADOS_CITA, default='pendiente', verbose_name="Estado de Cita")
+
+    monto_abono = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        validators=[MinValueValidator(0)],
+        verbose_name="Monto de Abono (CLP)"
+    )
+    estado_abono = models.CharField(max_length=20, choices=ESTADOS_ABONO, default='pendiente', verbose_name="Estado del Abono")
+
+    historial_notificaciones = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Historial de Notificaciones",
+        help_text="Registro de envíos por WhatsApp API y conmutación a correo de respaldo (SMTP)."
+    )
+
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
+
+    class Meta:
+        verbose_name = "Cita"
+        verbose_name_plural = "Citas"
+        ordering = ['-fecha_hora_cita']
+
+    def __str__(self):
+        return f"Cita #{self.id} - {self.cliente.get_full_name()} con {self.empleado.get_full_name()} ({self.fecha_hora_cita.strftime('%d/%m/%Y %H:%M')})"
