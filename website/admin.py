@@ -5,7 +5,7 @@ from .models import (
     ConfiguracionSistema, 
     Servicio, 
     Disponibilidad, 
-    BLoqueoHorario, 
+    BloqueoHorario, 
     Cita, 
     CitaServicio, 
     Pago
@@ -62,7 +62,7 @@ class DisponibilidadAdmin(admin.ModelAdmin):
     list_filter = ('empleado', 'dia_semana')
     search_fields = ('empleado__first_name', 'empleado__last_name')
 
-@admin.register(BLoqueoHorario)
+@admin.register(BloqueoHorario)
 class BloqueoHorarioAdmin(admin.ModelAdmin):
     list_display = ('empleado', 'fecha_inicio', 'fecha_fin', 'motivo')
     list_filter = ('empleado', 'fecha_inicio', 'fecha_fin')

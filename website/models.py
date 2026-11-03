@@ -20,7 +20,7 @@ class Usuario(AbstractUser):
         ('profesional', 'Profesional'),
         ('admin', 'Administradora'),
         ('estilista', 'Estilista'),
-    ),
+    )
     #email personalizado para que tengan uno unico para iniciar sesion como otra opcion
     email =models.EmailField(
         unique=True,
