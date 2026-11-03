@@ -17,9 +17,10 @@ telefono_validator = RegexValidator(
 class Usuario(AbstractUser):
     ROLES = (
         ('cliente', 'Cliente'),
-        ('profesional', 'Profesional', 'Estilista'),
+        ('profesional', 'Profesional'),
         ('admin', 'Administradora'),
-    ),
+        ('estilista', 'Estilista'),
+    )
     #email personalizado para que tengan uno unico para iniciar sesion como otra opcion
     email =models.EmailField(
         unique=True,
@@ -132,7 +133,7 @@ class Disponibilidad(models.Model):
     )
     dia_semana= models.CharField(
         max_length=10,
-        choises= DIAS_SEMANA,
+        choices= DIAS_SEMANA,
         verbose_name= "Dia de la semana"
         )
     hora_inicio= models.TimeField(
@@ -157,10 +158,10 @@ class Disponibilidad(models.Model):
             raise ValidationError({'hora_inicio': 'La hora de inicio debe ser menor que la hora de fin.'})
         
     def __str__(self):
-        return f"{self.empleado_get_full_name()} - {self.dia_semana_display()}: {self.hora_inicio.strftime('%H:%M')} - {self.hora_fin.strftime('%H:%M')}"
+        return f"{self.empleado.get_full_name()} - {self.get_dia_semana_display()}: {self.hora_inicio.strftime('%H:%M')} - {self.hora_fin.strftime('%H:%M')}"
     
 #bloqueo de horarios (vacaciones, feriados, colacion, descansos)
-class BLoqueoHorario(models.Model):
+class BloqueoHorario(models.Model):
     empleado = models.ForeignKey(
         Usuario,
         on_delete= models.CASCADE,
@@ -185,7 +186,7 @@ class BLoqueoHorario(models.Model):
             raise ValidationError({'fecha_inicio': 'La fecha de inicio debe ser menor o igual a la fecha de fin.'})
         
     def __str__(self):
-        return f"Bloqueo {self.empleado.get_full_name()}: {self.fecha_inicio.strftime('%d/%m/%Y %H:%M')} al {self.fecha_fin.strftime('%d/%%m/%Y %H:%M')} - Motivo: {self.motivo}"
+        return f"Bloqueo {self.empleado.get_full_name()}: {self.fecha_inicio.strftime('%d/%m/%Y %H:%M')} al {self.fecha_fin.strftime('%d/%m/%Y %H:%M')} - Motivo: {self.motivo}"
     
 #Cita /Reserva
 class Cita(models.Model):
