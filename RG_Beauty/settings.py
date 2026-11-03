@@ -127,3 +127,12 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'website.Usuario'  # Indicamos que se usará el modelo de usuario personalizado
+
+#Redirecciones de autenticacion
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'reserva_paso1'
+LOGOUT_REDIRECT_URL = 'login'
+
+# Backend de correo (para pruebas locales muestra el correo en la consola)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'notificaciones@rgbeautyspa.cl'
