@@ -23,9 +23,11 @@ from website import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('registro/', views.registro_view, name='registro'),
+    path('reserva/paso1/<int:servicio_id>/', views.reserva_paso1_servicios, name='reserva_paso1'),
     path('reserva/paso2/<int:servicio_id>/', views.reserva_paso2_fecha, name='reserva_paso2'),
     path('reserva/paso3/<int:servicio_id>/<int:empleado_id>/', views.reserva_paso3_horarios, name='reserva_paso3'),
     path('reserva/paso4/resumen/', views.reserva_paso4_resumen, name='reserva_paso4'),
