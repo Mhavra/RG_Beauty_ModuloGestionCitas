@@ -1,8 +1,8 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
-#from django.core.exceptions import ValidationError
-#from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+
 # Create your models here.
 
 #validador de numero de telefono chileno
@@ -38,6 +38,9 @@ class Usuario(AbstractUser):
         verbose_name='Numero de telefono (+569)',
         help_text='Formato: +56912345678'
         )
+
+    #campo json nativo para preferencias esteticas e historial estetico
+
     #username field para que se pueda iniciar sesion con el correo electronico
     USERNAME_FIELD = 'email'
     #required fields para que se pueda crear un usuario con el correo electronico y el username
@@ -90,3 +93,106 @@ class ConfiguracionSistema(models.Model):
             return f'COnfiguración activa: Abono Fijo de ${self.monto_fijo_abono:,.0f} CLP'
         else:
             return f'Configuración activa: Abono del {self.porcentaje_abono:.2f}%'
+
+
+class Servicio(models.Model):
+    nombre_serv = models.CharField(max_length=100, verbose_name="Nombre del servicio")
+    duracion_minutos = models.PositiveIntegerField(validators=[MinValueValidator(15)], 
+    verbose_name="Duracion(minutos)", help_text="Duracion real en minutos (ej:90 oara corte, 300 para mechas).")
+    precio_serv = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)],
+    verbose_name="Precio total (CLP)")
+
+    class Meta:
+        verbose_name = "Servicio"
+        verbose_name_plural = "Servicios"
+
+        def __str__(self):
+            return f"{self.nombre_serv}
+            ({self.duracion_minutos}min) - $
+            {self.precio_serv:,.0f}"
+
+#disponibilidad horaria semanal
+class Disponibilidad(models.Model):
+    DIAS_SEMANA= (
+            ('Lunes', 'Lunes'),
+            ('Martes', 'Martes'),
+            ('Miercoles', 'Miercoles'),
+            ('Jueves', 'Jueves'),
+            ('Viernes', 'Viernes'),
+            ('Sabado', 'Sabado'),
+            ('Domingo', 'Domingo'),
+    )
+    empleado = models.ForeignKey(
+        Usuario,
+        on_delete=models.CASCADE,
+        related_name='disponibilidades',
+        limit_choices_to={'rol__in':
+                          ['profesional', 'admin']},
+                          verbose_name= "PRofesional"
+    )
+    dia_semana= models.CharField(
+        max_length=10,
+        choises= DIAS_SEMANA,
+        verbose_name= "Dia de la semana"
+        )
+    hora_inicio= models.TimeField(
+        verbose_name= "Hora de inicio"
+        )
+    hora_fin= models.TimeField(
+        verbose_name= "Hora de fin"
+        )
+    
+    class Meta: 
+        verbose_name= "Disponibilidad horaria"
+        verbose_name_plural= "Disponibilidades horarias"
+        unique_together=(
+            #este se usa para que no se repita la disponibilidad de un mismo empleado en el mismo dia y hora
+            'empleado',
+            'dia_semana',
+            'hora_inicio'
+        )
+    
+    def clean(self):
+        if self.hora_inicio and self.hora_fin and self.hora_inicio >= self.hora_fin:
+            raise ValidationError({'hora_inicio': 'La hora de inicio debe ser menor que la hora de fin.'})
+        
+    def __str__(self):
+        return f"{self.empleado_get_full_name()} - {self.dia_semana_display()}: {self.hora_inicio.strftime('%H:%M')} - {self.hora_fin.strftime('%H:%M')}"
+    
+#bloqueo de horarios (vacaciones, feriados, colacion, descansos)
+class BLoqueoHorario(models.Model):
+    empleado = models.ForeignKey(
+        Usuario,
+        on_delete= models.CASCADE,
+        related_name='bloqueos',
+        limit_choices_to={'rol__in': ['profesional', 'admin']},
+        verbose_name= "Profesional"
+    )
+    fecha_inicio =  models.DateField(verbose_name="Fecha/Hora inicio de bloqueo")
+    fecha_fin= models.DateField(verbose_name="Fecha/Hora fin de bloqueo")
+    motivo= models.CharField(
+        max_length=250,
+        default="Descanso / No disponible",
+        verbose_name= "Motivo del bloqueo"
+    )
+
+    class Meta:
+        verbose_name= "Bloqueo de horario"
+        verbose_name_plural= "Bloqueos de horarios"
+
+    def clean(self):
+        if self.fecha_inicio and self.fecha_fin and self.fecha_inicio >= self.fecha_fin:
+            raise ValidationError({'fecha_inicio': 'La fecha de inicio debe ser menor o igual a la fecha de fin.'})
+        
+    def __str__(self):
+        return f"Bloqueo {self.empleado.get_full_name()}: {self.fecha_inicio.strftime('%d/%m/%Y %H:%M')} al {self.fecha_fin.strftime('%d/%%m/%Y %H:%M')} - Motivo: {self.motivo}"
+    
+#Cita /Reserva
+class Cita(models.Model):
+    ESTADOS_CITA = (
+        ('pendiente', 'Pendiente de abono'),
+        ('confirmada', 'Confirmada con abono'),
+        ('çompletada', 'Atencion completada'),
+        ('cancelada', 'Cancelada'),
+        ('finalizada', 'Finalizada'),
+    )
