@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %} Panel de Control - RG Beauty {% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-center border-b pb-4">
+        <h2 class="text-2x1 font-serif font-bold">Panel de administración</h2>
+        <span class="text-xs bg-pink-100 text-pink-800 font-semibold px-2.5 py-1 rounded">Abono Activo: {{ config.porcentaje_abono }}%</span>
+    </div>
+    
+    <div class="bg-white p-4 rounded-x1 border space-y-3">
+        <h3 class="font-bold text-sm">Descargar Informes del Módulo de Citas</h3>
+        <form method="GET" action="" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+                <label class="block text-xs text-gray-600">Fecha Inicio:</label>
+                {{ form_reporte.fecha_inicio }}
+            </div>
+            <div>
+                <label class="block text-xs text-gray-600">Fecha Fin:</label>
+                {{ form_reporte.fecha_fin }}
+            </div>
+            <div>
+                <label class="block text-xs text-gray-600">Formato:</label>
+                {{ form_reporte.formato }}
+            </div>
+            <button type="submit" class="md:col-span-3 bg-gray-800 text-white font-bold py-2 rounded-lg text-xs hover:bg-gray-700">
+                Generar y Descargar Reporte
+            </button>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-x1 border overflow-hidden">
+        <table class="w-full text-left text-xs">
+            <thead class="bg-gray-100 border-b">
+                <tr>
+                    <th class="p-3">ID</th>
+                    <th class="p-3">Cliente</th>
+                    <th class="p-3">Profesional</th>
+                    <th class="p-3">Fecha/Hora</th>
+                    <th class="p-3">Abono</th>
+                    <th class="p-3">Estado</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y">
+                {% for c in citas %}
+                <tr>
+                    <td class="p-3 font-bold">{{ c.id }}</td>
+                    <td class="p-3">{{ c.cliente.get_full_name }}</td>
+                    <td class="p-3">{{ c.empleado.first_name }}</td>
+                    <td class="p-3">{{ c.fecha_hora_cita| }}</td>
+                    <td class="p-3">{{ c.monto_abono|floatformat:0 }}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 rounded text-xs font-semibold {% if c.estado == 'confirmada' %} bg-green-100 text-green-100 text-green-800 {% else %} bg-yellow-100 text-yellow-800 {% endif %}">
+                            {{ c.get_estado_display }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
