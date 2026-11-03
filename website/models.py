@@ -186,7 +186,7 @@ class BloqueoHorario(models.Model):
             raise ValidationError({'fecha_inicio': 'La fecha de inicio debe ser menor o igual a la fecha de fin.'})
         
     def __str__(self):
-        return f"Bloqueo {self.empleado.get_full_name()}: {self.fecha_inicio.strftime('%d/%m/%Y %H:%M')} al {self.fecha_fin.strftime('%d/%%m/%Y %H:%M')} - Motivo: {self.motivo}"
+        return f"Bloqueo {self.empleado.get_full_name()}: {self.fecha_inicio.strftime('%d/%m/%Y %H:%M')} al {self.fecha_fin.strftime('%d/%m/%Y %H:%M')} - Motivo: {self.motivo}"
     
 #Cita /Reserva
 class Cita(models.Model):
