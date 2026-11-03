@@ -1,41 +1,34 @@
 {% extends 'base.html' %}
-{% block title %}Paso 3: Horarios Disponibles - RG Beauty Spa{% endblock %}
+{% block title %}Paso 3: Horarios - RG Beauty Spa{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <!-- Encabezado del Paso -->
-    <div class="text-center">
-        <span class="text-xs font-bold tracking-widest text-pasteldink uppercase">Paso 3 de 5</span>
-        <h2 class="text-2xl font-serif font-bold text-gray-900 mt-1">Horarios Disponibles</h2>
-        <p class="text-xs text-gray-500 mt-1">
-            {{ servicio.nombre_serv }} con <strong>{{ empleado.get_full_name|default:empleado.first_name }}</strong> el <strong>{{ fecha }}</strong>
-        </p>
-    </div>
+<section class="step-panel">
+    <div class="eyebrow">PASO 3</div>
+    <h1>Elige tu hora</h1>
+    <p class="lead">{{ servicio.nombre_serv }} con <strong>{{ empleado.get_full_name }}</strong> el <strong>{{ fecha }}</strong></p>
 
-    <!-- Grilla de Horarios -->
-
-    <form method="POST" action="{% url 'reserva_paso4' %}" class="space-y-5">
+    <form method="POST" action="{% url 'reserva_paso4' %}">
         {% csrf_token %}
         <input type="hidden" name="servicio_id" value="{{ servicio.id }}">
         <input type="hidden" name="empleado_id" value="{{ empleado.id }}">
 
-        <label class="bloock text-xs font-bold text-gray-700 uppercase">Selecciona una hora de inicio:</label>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="choice-label">Horarios disponibles</div>
+        <div class="time-grid">
             {% for h in horarios %}
-            <label class="bg-white border border-gray-200 rounded-xl p-3 text-center cursor-pointer hover:border-pink-300 hover:bg-pink-50 transition block">
-                <input type="radio" name="fecha_hora" value="{{ fecha }} {{ h }}" class="hidden peer" required>
-                <span class=" text-sm font-bold text-gray-800 peer-checked:text-pink-700 peer-checked:font-extrabold block">{{ h }} hrs</span>
+            <label>
+                <input type="radio" name="fecha_hora" value="{{ fecha }} {{ h }}" style="display:none;" required>
+                <span>{{ h }}</span>
             </label>
             {% empty %}
-            <div class="col-span-4 bg-white p-6 rounded-2xl text-center text-gray-500 text-xs">
-                No hay bloques libres para este día con este especialista. Por favor intenta otra fecha u especialista.
+            <div class="notice" style="grid-column: 1 / -1; justify-content: center;">
+                No hay bloques libres para este día. Intenta otra fecha.
             </div>
             {% endfor %}
         </div>
 
-        <button type="submit" class="w-full bg-pasteldink text-gray-900 font-bold py-3 rounded-2xl text-sm shadow hover:opacity-90 transition mt-4">
+        <button type="submit" class="btn btn-primary full">
             Continuar con el Resumen &rarr;
         </button>
     </form>
-</div>
+</section>
 {% endblock %}

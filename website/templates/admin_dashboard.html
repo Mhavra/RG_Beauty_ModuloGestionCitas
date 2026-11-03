@@ -1,62 +1,90 @@
 {% extends 'base.html' %}
-{% block title %} Panel de Control - RG Beauty {% endblock %}
+{% block title %}Panel de Control - RG Beauty{% endblock %}
+
 {% block content %}
-<div class="space-y-6">
-    <div class="flex justify-between items-center border-b pb-4">
-        <h2 class="text-2xl font-serif font-bold">Panel de administración</h2>
-        <span class="text-xs bg-pink-100 text-pink-800 font-semibold px-2.5 py-1 rounded">Abono Activo: {{ config.porcentaje_abono }}%</span>
-    </div>
+<div style="padding: 27px 32px 50px; max-width: 1200px; margin: 0 auto; width: 100%;">
     
-    <div class="bg-white p-4 rounded-xl border space-y-3">
-        <h3 class="font-bold text-sm">Descargar Informes del Módulo de Citas</h3>
-        <form method="GET" action="" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <header class="admin-header">
+        <div>
+            <span class="admin-eyebrow">RG BEAUTY SPA</span>
+            <h1>Panel de administración</h1>
+        </div>
+        <div class="admin-actions">
+            <span class="status-badge">Abono Activo: {{ config.porcentaje_abono }}%</span>
+            <a href="{% url 'reserva_paso1' %}" class="btn btn-secondary" style="margin-left: 15px;">Ver reserva web</a>
+        </div>
+    </header>
+
+    <!-- FORMULARIO DE REPORTES (RECUPERADO) -->
+    <div class="agenda-card" style="margin-bottom: 25px; padding: 20px;">
+        <h3 style="margin-bottom: 15px; font-size: 16px;">Descargar Informes del Módulo de Citas</h3>
+        <form method="GET" action="" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; align-items: end;">
             <div>
-                <label class="block text-xs text-gray-600">Fecha Inicio:</label>
+                <label style="display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px;">Fecha Inicio:</label>
                 {{ form_reporte.fecha_inicio }}
             </div>
             <div>
-                <label class="block text-xs text-gray-600">Fecha Fin:</label>
+                <label style="display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px;">Fecha Fin:</label>
                 {{ form_reporte.fecha_fin }}
             </div>
             <div>
-                <label class="block text-xs text-gray-600">Formato:</label>
+                <label style="display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px;">Formato:</label>
                 {{ form_reporte.formato }}
             </div>
-            <button type="submit" class="md:col-span-3 bg-gray-800 text-white font-bold py-2 rounded-lg text-xs hover:bg-gray-700">
+            <button type="submit" class="btn btn-secondary" style="grid-column: 1 / -1; background: var(--ink); color: white;">
                 Generar y Descargar Reporte
             </button>
         </form>
     </div>
 
-    <div class="bg-white rounded-xl border overflow-hidden">
-        <table class="w-full text-left text-xs">
-            <thead class="bg-gray-100 border-b">
-                <tr>
-                    <th class="p-3">ID</th>
-                    <th class="p-3">Cliente</th>
-                    <th class="p-3">Profesional</th>
-                    <th class="p-3">Fecha/Hora</th>
-                    <th class="p-3">Abono</th>
-                    <th class="p-3">Estado</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y">
-                {% for c in citas %}
-                <tr>
-                    <td class="p-3 font-bold">{{ c.id }}</td>
-                    <td class="p-3">{{ c.cliente.get_full_name }}</td>
-                    <td class="p-3">{{ c.empleado.first_name }}</td>
-                    <td class="p-3">{{ c.fecha_hora_cita| }}</td>
-                    <td class="p-3">{{ c.monto_abono|floatformat:0 }}</td>
-                    <td class="p-3">
-                        <span class="px-2 py-0.5 rounded text-xs font-semibold {% if c.estado == 'confirmada' %} bg-green-100 text-green-100 text-green-800 {% else %} bg-yellow-100 text-yellow-800 {% endif %}">
-                            {{ c.get_estado_display }}
-                        </span>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- TARJETAS DE ESTADÍSTICAS -->
+    <div class="stat-row">
+        <div class="stat-card">
+            <span class="stat-icon rose">📅</span>
+            <span><small>CITAS REGISTRADAS</small><strong>{{ citas.count }}</strong><em>En el sistema</em></span>
+        </div>
+    </div>
+
+    <!-- TABLA DE CITAS -->
+    <div class="agenda-card">
+        <div class="agenda-toolbar">
+            <h2>Reservas Recientes</h2>
+        </div>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                <thead style="background: var(--canvas); border-bottom: 1px solid var(--line); font-size: 11px; color: var(--muted); text-transform: uppercase;">
+                    <tr>
+                        <th style="padding: 15px;">ID</th>
+                        <th style="padding: 15px;">Cliente</th>
+                        <th style="padding: 15px;">Profesional</th>
+                        <th style="padding: 15px;">Fecha/Hora</th>
+                        <th style="padding: 15px;">Abono</th>
+                        <th style="padding: 15px;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody style="font-size: 13px;">
+                    {% for c in citas %}
+                    <tr style="border-bottom: 1px solid var(--line);">
+                        <td style="padding: 15px; font-weight: bold;">#{{ c.id }}</td>
+                        <td style="padding: 15px;">{{ c.cliente.get_full_name }}</td>
+                        <td style="padding: 15px;">{{ c.empleado.first_name }}</td>
+                        <!-- Corregido el pipe vacío | -->
+                        <td style="padding: 15px;">{{ c.fecha_hora_cita|date:"d/m/Y H:i" }}</td>
+                        <td style="padding: 15px;">${{ c.monto_abono|floatformat:"0" }}</td>
+                        <td style="padding: 15px;">
+                            <span class="status-badge" style="{% if c.estado == 'confirmada' %} background: #eaf7ef; color: #347b55; {% else %} background: #fbf7e9; color: #9a7620; {% endif %}">
+                                {{ c.get_estado_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="padding: 20px; text-align: center; color: var(--muted);">No hay citas registradas aún.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}

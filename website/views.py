@@ -14,7 +14,7 @@ from django.conf import settings
 from .models import (Servicio, Usuario, Cita, CitaServicio, Pago,
 Disponibilidad, BloqueoHorario, ConfiguracionSistema)
 from .forms import RegistroClienteForm, LoginForm, FiltroReporteForm
-
+from decimal import Decimal
 
 def login_view(request): 
     if request.method == 'POST': 
@@ -62,7 +62,8 @@ def reserva_paso3_horarios(request, servicio_id, empleado_id):
     servicio = get_object_or_404(Servicio, pk=servicio_id) 
     empleado = get_object_or_404(Usuario, pk=empleado_id) 
     fecha_str = request.GET.get('fecha', datetime.date.today().strftime('%Y-%m-%d')) 
-    horarios_libres = ['09:00', '11:00', '15:00', '17:00'] 
+    horarios_libres = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo']
+
     return render(request, 'reserva_paso3_horarios.html', {'servicio': servicio, 'empleado': empleado, 'fecha': fecha_str, 'horarios': horarios_libres}) 
 
  
@@ -76,13 +77,13 @@ def reserva_paso4_resumen(request):
     empleado = get_object_or_404(Usuario, pk=empleado_id) 
      
     config = ConfiguracionSistema.objects.first() 
-    porcentaje = config.porcentaje_abono if config else 50.00 
+    porcentaje = config.porcentaje_abono if config else Decimal('50.00') 
      
     monto_total = servicio.precio_serv 
     if config and config.permite_monto_fijo: 
         monto_abono = config.monto_fijo_abono 
     else: 
-        monto_abono = (monto_total * (porcentaje / 100)) 
+        monto_abono = (monto_total * (porcentaje / Decimal('100'))) 
          
     saldo_salon = monto_total - monto_abono 
      

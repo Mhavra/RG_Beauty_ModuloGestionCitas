@@ -1,22 +1,43 @@
 {% extends 'base.html' %}
-{% block title %}Iniciar Sesión - RG Beauty {% endblock %}
-{% block content %}
+{% block title %}Iniciar Sesión - RG Beauty{% endblock %}
 
-<div class="bg-white p-8 rounded 2xl shadow-sm border max-w-md mx-auto space-y-4">
-    <h2 class="text-2xl font-serif foont-bold text-center">Iniciar Sesión</h2>
-    <form method="POST" class="space-y-4">
-        {% csrf_token %}
-        <div>
-            <label class="block text-xs font-bold text-gray-700 mb-1">Correo Electrónico:</label>
-            {{ form.username }}
+{% block content %}
+<div style="display: flex; align-items: center; justify-content: center; min-height: 70vh;">
+    <div class="login-card" style="width: 100%;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <div class="eyebrow">BIENVENIDA DE VUELTA</div>
+            <h1 style="font-size: 32px; margin-bottom: 8px;">Iniciar Sesión</h1>
+            <p class="lead" style="margin-bottom: 0;">Ingresa a tu cuenta de RG Beauty.</p>
         </div>
-        <div>
-            <label class="block text-xs font-bold text-gray-700 mb-1">Contraseña:</label>
-            {{ form.password }}
+
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label>Correo Electrónico:</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <span class="error-text">{{ form.username.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label>Contraseña:</label>
+                {{ form.password }}
+                {% if form.password.errors %}
+                    <span class="error-text">{{ form.password.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary full" style="margin-top: 10px;">
+                Ingresar
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 25px; border-top: 1px solid var(--line); padding-top: 20px;">
+            <p class="lead" style="font-size: 12px; margin-bottom: 10px;">¿Aún no tienes cuenta?</p>
+            <a href="{% url 'registro' %}" class="btn btn-secondary full" style="text-decoration: none; display: flex;">Regístrate aquí</a>
         </div>
-        <button type="submit" class="w-full bg-pasteldink text-gray-900 font-bold py-2.5 rounded-xl text-sm hover:opacity-90">
-            Ingresar
-        </button>
-    </form>
+    </div>
 </div>
 {% endblock %}
