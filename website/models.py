@@ -132,7 +132,7 @@ class Disponibilidad(models.Model):
     )
     dia_semana= models.CharField(
         max_length=10,
-        choises= DIAS_SEMANA,
+        choices= DIAS_SEMANA,
         verbose_name= "Dia de la semana"
         )
     hora_inicio= models.TimeField(
@@ -157,7 +157,7 @@ class Disponibilidad(models.Model):
             raise ValidationError({'hora_inicio': 'La hora de inicio debe ser menor que la hora de fin.'})
         
     def __str__(self):
-        return f"{self.empleado_get_full_name()} - {self.dia_semana_display()}: {self.hora_inicio.strftime('%H:%M')} - {self.hora_fin.strftime('%H:%M')}"
+        return f"{self.empleado.get_full_name()} - {self.get_dia_semana_display()}: {self.hora_inicio.strftime('%H:%M')} - {self.hora_fin.strftime('%H:%M')}"
     
 #bloqueo de horarios (vacaciones, feriados, colacion, descansos)
 class BLoqueoHorario(models.Model):
