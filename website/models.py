@@ -256,3 +256,57 @@ class CitaServicio(models.Model):
 
     def __str__(self):
         return f"Cita #{self.cita.id} - Servicio: {self.servicio.nombre_serv}"
+
+#REgistro de pagos y abonos de este modulo
+class Pago(models.Model):
+    METODOS_PAGO = (
+        ('efectivo', 'Efectivo en Salón'),
+        ('debito', 'Débito en Salón'),
+        ('credito', 'Crédito en Salón'),
+        ('mercadopago', 'Mercado Pago'),
+        ('webpay', 'Webpay Plus'),
+    )
+    TIPOS_PAGO = (
+        ('abono', 'Abono'),
+        ('saldo', 'Saldo Restante en Salón'),
+        ('total', 'Pago Total'),
+        ('reembolso', 'Reembolso'),
+    )
+    ESTADOS_PAGO = (
+        ('pendiente', 'Pendiente'),
+        ('completado', 'Completado'),
+        ('rechazado', 'Rechazado'),
+        ('reembolsado', 'Reembolsado'),
+    )
+
+    cita = models.ForeignKey(
+        Cita,
+        on_delete=models.CASCADE,
+        related_name='pagos',
+        verbose_name="Cita Asociada"
+    )
+    cliente = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='pagos', verbose_name="Usuario que Paga")
+    monto = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        verbose_name="Monto Pagado (CLP)"
+    )
+    metodo_pago = models.CharField(max_length=30, choices=METODOS_PAGO, verbose_name="Método de Pago")
+    tipo_pago = models.CharField(max_length=30, choices=TIPOS_PAGO, verbose_name="Tipo de Pago")
+    estado = models.CharField(max_length=30, choices=ESTADOS_PAGO, default='completado', verbose_name="Estado del Pago")
+    fecha_pago = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Pago")
+    transaccion_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="ID Transacción Pasarela",
+        help_text="Identificador único devuelto por Mercado Pago / WebPay"
+    )
+
+    class Meta:
+        verbose_name = "Pago"
+        verbose_name_plural = "Pagos"
+
+    def __str__(self):
+        return f"Pago ${self.monto:,.0f} ({self.get_tipo_pago_display()}) - Cita #{self.cita.id}"
