@@ -16,6 +16,11 @@ Disponibilidad, BloqueoHorario, ConfiguracionSistema)
 from .forms import RegistroClienteForm, LoginForm, FiltroReporteForm
 
 
+
+def home_view(request):
+    return render(request, 'home.html')   
+
+
 def login_view(request): 
     if request.method == 'POST': 
         form = LoginForm(request, data=request.POST) 
