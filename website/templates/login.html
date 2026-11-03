@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Iniciar Sesión - RG Beauty {% endblock %}
+{% block content %}
+
+<div class="bg-white p-8 rounded 2x1 shadow-sm border max-w-md mx-auto space-y-4">
+    <h2 class="text-2x1 font-serif foont-bold text-center">Iniciar Sesión</h2>
+    <form method="POST" class="space-y-4">
+        {% csrf_token %}
+        <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">Correo Electrónico:</label>
+            {{ form.username }}
+        </div>
+        <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">Contraseña:</label>
+            {{ form.password }}
+        </div>
+        <button type="submit" class="w-full bg-pasteldink text-gray-900 font-bold py-2.5 rounded-x1 text-sm hover:opacity-90">
+            Ingresar
+        </button>
+    </form>
+</div>
+{% endblock %}
