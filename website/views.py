@@ -25,6 +25,11 @@ from django.db.models import Q
 from django.urls import reverse_lazy
 from .forms import CitaForm, EditarPerfilForm
 
+
+def home_view(request):
+    return render(request, 'home.html')   
+
+
 def login_view(request): 
     if request.method == 'POST': 
         form = LoginForm(request, data=request.POST) 
@@ -55,7 +60,7 @@ def registro_view(request):
         form = RegistroClienteForm() 
     return render(request, 'registro.html', {'form': form}) 
 
- 
+@login_required
 def reserva_paso1_servicios(request): 
     servicios = Servicio.objects.all() 
     return render(request, 'reserva_paso1_servicios.html', {'servicios': servicios}) 
