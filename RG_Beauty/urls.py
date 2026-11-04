@@ -18,23 +18,34 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import RedirectView
 
 from website import views
 
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('', RedirectView.as_view(pattern_name='login', permanent=False), name='home'),
     
+    path('admin/', admin.site.urls),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('registro/', views.registro_view, name='registro'),
-    path('', views.reserva_paso1_servicios, name='reserva_paso1'),
+    path('reserva/paso1/', views.reserva_paso1_servicios, name='reserva_paso1'),
     path('reserva/paso2/<int:servicio_id>/', views.reserva_paso2_fecha, name='reserva_paso2'),
     path('reserva/paso3/<int:servicio_id>/<int:empleado_id>/', views.reserva_paso3_horarios, name='reserva_paso3'),
     path('reserva/paso4/resumen/', views.reserva_paso4_resumen, name='reserva_paso4'),
     path('reserva/paso5/pagar/', views.reserva_paso5_procesar_pago, name='reserva_paso5'),
     path('reserva/exito/<int:cita_id>/', views.reserva_paso6_exito, name='reserva_paso6_exito'),
     path('admin-panel/', views.admin_dashboard, name='admin_dashboard'),
+    path('mis-citas/', views.mis_citas, name='mis_citas'),
+    path('mis-citas/<int:pk>/', views.detalle_cita, name='detalle_cita'),
+    path('mis-citas/<int:pk>/editar/', views.editar_cita, name='editar_cita'),
+    path('mis-citas/<int:pk>/eliminar/', views.eliminar_cita, name='eliminar_cita'),
 
+    # Mi Cuenta
+    path('cuenta/', views.cuenta, name='cuenta'),
+    path('cuenta/editar/', views.editar_perfil, name='editar_perfil'),
+    path('cuenta/password/', views.CambiarPasswordView.as_view(), name='cambiar_password'),
 ]
 
 if settings.DEBUG:

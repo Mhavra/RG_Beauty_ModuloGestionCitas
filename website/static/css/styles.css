@@ -1,0 +1,410 @@
+/* ==========================================
+   1. FUENTES Y VARIABLES GLOBALES
+   ========================================== */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+
+:root {
+  --rose: #f4c2c2;
+  --rose-deep: #d98f96;
+  --rose-wash: #fff4f4;
+  --lilac: #e6e6fa;
+  --lilac-deep: #9994c8;
+  --gold: #d4af37;
+  --gold-wash: #fbf7e9;
+  --ink: #222222;
+  --muted: #716c70;
+  --line: #ebe7e8;
+  --canvas: #f8f9fa;
+  --white: #ffffff;
+  --green: #4f9a73;
+  --danger: #b95151;
+  --shadow: 0 12px 40px rgba(67, 45, 50, .09);
+}
+
+/* ==========================================
+   2. RESET Y ESTILOS BASE
+   ========================================== */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  background: var(--canvas);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+h1, h2, h3, p { margin-top: 0; }
+h1, h2, h3 { font-family: 'Playfair Display', serif; }
+a { text-decoration: none; color: inherit; }
+
+/* ==========================================
+   3. BOTONES
+   ========================================== */
+.btn {
+  border: 0;
+  border-radius: 12px;
+  padding: 13px 18px;
+  min-height: 48px;
+  font-weight: 700;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn-primary {
+  background: var(--rose);
+  color: #432f33;
+  box-shadow: 0 7px 18px rgba(196,130,139,.18);
+}
+.btn-primary:hover { background: #efb4b6; }
+.btn-secondary { border: 1px solid var(--line); background: var(--white); }
+.btn-ghost { background: transparent; min-height: 40px; }
+.full { width: 100%; }
+
+/* ==========================================
+   4. HEADER Y MARCA
+   ========================================== */
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-mark {
+  background: var(--ink);
+  color: var(--white);
+  width: 43px;
+  height: 43px;
+  border-radius: 50% 50% 46% 54%;
+  display: grid;
+  place-items: center;
+  font-family: 'Playfair Display';
+  letter-spacing: -1px;
+  font-weight: bold;
+}
+.brand-copy { display: flex; flex-direction: column; line-height: 1.1; }
+.brand-copy strong { font-family: 'Playfair Display'; font-size: 18px; }
+.brand-copy small { letter-spacing: 2.2px; font-size: 8px; margin-top: 3px; color: var(--muted); }
+
+.client-header {
+  height: 76px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 max(28px, calc((100vw - 1160px)/2));
+  background: rgba(255,255,255,.88);
+  backdrop-filter: blur(14px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.header-actions { display: flex; align-items: center; gap: 18px; }
+.secure { color: var(--muted); display: flex; align-items: center; gap: 6px; font-size: 13px; }
+
+/* ==========================================
+   5. LAYOUT CLIENTE (Flujo de reserva)
+   ========================================== */
+.client-main {
+  width: min(100% - 36px, 640px);
+  margin: 0 auto;
+  padding: 30px 0 72px;
+  flex-grow: 1;
+}
+.eyebrow { color: var(--rose-deep); font-size: 11px; letter-spacing: 1.8px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; }
+.step-panel h1 { font-size: clamp(30px, 5vw, 40px); line-height: 1.12; margin-bottom: 10px; }
+.lead { color: var(--muted); font-size: 15px; line-height: 1.5; margin-bottom: 28px; }
+
+/* ==========================================
+   6. TARJETAS DE SERVICIOS (Paso 1)
+   ========================================== */
+.service-list { display: grid; gap: 13px; margin-bottom: 22px; }
+.service-card {
+  display: grid;
+  grid-template-columns: 112px 1fr auto;
+  gap: 17px;
+  align-items: center;
+  padding: 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 18px;
+  background: var(--white);
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.service-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); border-color: var(--rose-deep); }
+.service-card img { width: 112px; height: 92px; object-fit: cover; border-radius: 12px; }
+.service-info h2 { font-size: 18px; margin: 6px 0; }
+.mini-tag { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--rose-deep); font-weight: 700; }
+.meta { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 12px; }
+.service-price { text-align: right; padding-right: 9px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.service-price small { color: var(--muted); font-size: 10px; }
+.service-price strong { font-size: 17px; }
+
+/* ==========================================
+   7. SELECCIÓN DE PROFESIONAL (Paso 2)
+   ========================================== */
+.pro-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
+.pro-card {
+  border: 1.5px solid var(--line);
+  background: var(--white);
+  border-radius: 14px;
+  padding: 13px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+}
+.pro-card:has(input:checked) { border-color: var(--rose-deep); background: var(--rose-wash); }
+.avatar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: var(--lilac); }
+.calendar-card { border: 1px solid var(--line); border-radius: 17px; padding: 18px; margin-bottom: 20px; background: var(--white); }
+
+/* ==========================================
+   8. SELECCIÓN DE HORARIOS (Paso 3)
+   ========================================== */
+.time-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 22px; }
+.time-grid label {
+  min-height: 52px;
+  border: 1px solid var(--line);
+  background: var(--white);
+  border-radius: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.2s;
+}
+.time-grid label:has(input:checked) { background: var(--rose); border-color: var(--rose-deep); }
+
+/* ==========================================
+   9. RESUMEN Y PAGO (Paso 4)
+   ========================================== */
+.appointment-card, .price-card { border: 1px solid var(--line); border-radius: 17px; overflow: hidden; margin-bottom: 15px; background: var(--white); }
+.appointment-top { display: flex; gap: 13px; align-items: center; padding: 15px; background: var(--rose-wash); }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; padding: 17px; gap: 17px; }
+.detail-grid span { display: flex; flex-direction: column; gap: 3px; }
+.detail-grid small { font-size: 9px; color: var(--muted); letter-spacing: 1px; }
+.price-card { padding: 6px 17px; }
+.price-card div { display: flex; justify-content: space-between; padding: 12px 0; font-size: 13px; }
+.price-card div + div { border-top: 1px solid var(--line); }
+.price-card .deposit { color: #9a7620; }
+.notice { background: var(--gold-wash); color: #6c5b28; border: 1px solid #eee1aa; padding: 13px; border-radius: 12px; font-size: 11px; margin-bottom: 16px; }
+
+/* ==========================================
+   10. PANTALLA DE ÉXITO (Paso 6)
+   ========================================== */
+.confirmation { text-align: center; }
+.success-mark { width: 72px; height: 72px; display: grid; place-items: center; margin: 0 auto 18px; color: var(--green); border: 1px solid #a6d8bd; background: #edf8f2; border-radius: 50%; }
+.booking-number { background: var(--gold-wash); border: 1px solid #eadb9c; display: inline-flex; flex-direction: column; padding: 10px 33px; border-radius: 10px; margin-bottom: 17px; }
+.booking-number small { font-size: 8px; letter-spacing: 1px; }
+.booking-number strong { font-size: 19px; }
+.confirmation-card { text-align: left; border: 1px solid var(--line); border-radius: 15px; margin-bottom: 16px; padding: 5px 16px; background: white; }
+.confirmation-card > div { display: flex; gap: 12px; align-items: center; padding: 13px 0; }
+.confirmation-card > div + div { border-top: 1px solid var(--line); }
+.whatsapp-preview { display: flex; gap: 11px; text-align: left; color: #347c58; background: #effaf4; padding: 13px; border-radius: 12px; margin: 12px 0; }
+
+/* ==========================================
+   11. FORMULARIOS (LOGIN, REGISTRO Y PASO 4)
+   ========================================== */
+.login-card {
+  background: var(--white);
+  padding: 40px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  max-width: 440px;
+  margin: 40px auto;
+  box-shadow: var(--shadow);
+}
+.form-group { margin-bottom: 18px; }
+.form-group label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+input, select, textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  min-height: 48px;
+  background: var(--white);
+  padding: 0 15px;
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--rose-deep);
+  box-shadow: 0 0 0 3px rgba(217,143,150,.2);
+}
+.help-text { font-size: 10px; color: var(--muted); margin-top: 4px; display: block; }
+.error-text { font-size: 11px; color: var(--danger); margin-top: 4px; display: block; }
+
+/* ==========================================
+   12. PANEL DE ADMINISTRACIÓN (Admin Dashboard)
+   ========================================== */
+.admin-main { padding: 27px 32px 50px; max-width: 1200px; margin: 0 auto; width: 100%; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+.admin-header h1 { font-size: 27px; margin: 0; }
+.admin-eyebrow { color: var(--rose-deep); font-size: 11px; letter-spacing: 1.8px; font-weight: 700; margin-bottom: 8px; }
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.stat-card { background: var(--white); border: 1px solid var(--line); border-radius: 13px; padding: 15px; display: flex; align-items: center; gap: 12px; }
+.stat-icon { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font-size: 20px; }
+.stat-icon.rose { background: var(--rose-wash); }
+.stat-icon.gold { background: var(--gold-wash); }
+.stat-card span { display: flex; flex-direction: column; }
+.stat-card small { font-size: 9px; letter-spacing: .8px; color: var(--muted); }
+.stat-card strong { font-size: 20px; line-height: 1.1; }
+.agenda-card { background: var(--white); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.agenda-toolbar { padding: 17px 20px; border-bottom: 1px solid var(--line); }
+.status-badge { background: #eaf7ef; color: #347b55; font-size: 10px; padding: 5px 9px; border-radius: 20px; font-weight: 700; text-transform: uppercase; }
+
+/* ==========================================
+   13. FOOTER
+   ========================================== */
+footer { border-top: 1px solid var(--line); text-align: center; color: var(--muted); font-size: 10px; padding: 22px; margin-top: auto; }
+/* ==========================================
+   UTILIDADES
+   ========================================== */
+.hidden-input { display: none; }
+.text-center { text-align: center; }
+.text-capitalize { text-transform: capitalize; }
+.text-small { font-size: 12px; }
+.empty-state-msg { text-align: center; padding: 40px 0; }
+.empty-state-table { padding: 20px; text-align: center; color: var(--muted); }
+.mt-20 { margin-top: 20px; }
+
+/* Header */
+.btn-sm { min-height: 38px; padding: 0 15px; font-size: 12px; border-radius: 8px; }
+.btn-logout { color: var(--danger); font-size: 12px; font-weight: 600; }
+.btn-logout:hover { background: #fff4f4; }
+
+/* Auth (Login y Registro) */
+.auth-wrapper { display: flex; align-items: center; justify-content: center; min-height: 70vh; }
+.auth-card { width: 100%; max-width: 440px; }
+.auth-header { text-align: center; margin-bottom: 30px; }
+.auth-header h1 { font-size: 32px; margin-bottom: 8px; }
+.auth-header .lead { margin-bottom: 0; }
+.btn-block { margin-top: 10px; }
+.auth-footer { text-align: center; margin-top: 25px; border-top: 1px solid var(--line); padding-top: 20px; }
+.auth-footer p { font-size: 12px; margin-bottom: 10px; }
+.link-btn { text-decoration: none; display: flex; }
+
+/* Admin Dashboard */
+.admin-container { padding: 27px 32px 50px; max-width: 1200px; margin: 0 auto; width: 100%; }
+.btn-admin-action { margin-left: 15px; }
+.report-card { margin-bottom: 25px; padding: 20px; }
+.report-title { margin-bottom: 15px; font-size: 16px; }
+.report-form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; align-items: end; }
+.form-label-sm { display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+.btn-dark-full { grid-column: 1 / -1; background: var(--ink); color: var(--white); }
+.table-responsive { overflow-x: auto; }
+.data-table { width: 100%; text-align: left; border-collapse: collapse; }
+.data-table thead { background: var(--canvas); border-bottom: 1px solid var(--line); font-size: 11px; color: var(--muted); text-transform: uppercase; }
+.data-table th, .data-table td { padding: 15px; }
+.data-table tbody { font-size: 13px; }
+.data-table tbody tr { border-bottom: 1px solid var(--line); }
+.td-bold { font-weight: bold; }
+.status-confirmed { background: #eaf7ef; color: #347b55; }
+.status-pending { background: #fbf7e9; color: #9a7620; }
+
+/* Pasos de Reserva */
+.calendar-input-full { width: 100%; border: 1px solid var(--line); border-radius: 11px; padding: 12px; }
+.notice-center { grid-column: 1 / -1; justify-content: center; display: flex; align-items: center; }
+.appointment-info { display: flex; flex-direction: column; }
+.appointment-info small { font-size: 9px; color: var(--muted); letter-spacing: 1px; }
+.appointment-info em { font-style: normal; font-size: 11px; color: var(--muted); }
+.payment-select-wrap { margin-bottom: 15px; }
+.payment-select { width: 100%; border: 1px solid var(--line); border-radius: 11px; padding: 12px; background: var(--white); }
+
+/* Éxito */
+.success-details { padding: 15px; }
+.success-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.success-row:last-child { border-bottom: none; }
+.success-label { font-size: 12px; color: var(--muted); }
+.success-value { font-size: 12px; }
+.success-value-green { font-size: 12px; color: var(--green); text-transform: uppercase; }
+/* ==========================================
+   14. MODAL DE CERRAR SESIÓN (Dialog)
+   ========================================== */
+.modal-dialog {
+  border: none;
+  border-radius: 20px;
+  padding: 0;
+  max-width: 400px;
+  width: 90%;
+  background: transparent;
+  margin: auto;
+  box-shadow: var(--shadow);
+}
+
+.modal-dialog::backdrop {
+  background: rgba(34, 34, 34, 0.4);
+  backdrop-filter: blur(4px);
+}
+
+.modal-dialog[open] {
+  animation: modalFadeIn 0.25s ease-out forwards;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-content {
+  background: var(--white);
+  padding: 35px 30px;
+  border-radius: 20px;
+  text-align: center;
+}
+
+.modal-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: var(--rose-wash);
+  color: var(--rose-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 26px;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.modal-content p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 25px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.modal-actions > button,
+.modal-actions > form {
+  flex: 1;
+  display: flex;
+}
+
+.modal-actions .btn {
+  width: 100%;
+  font-size: 14px;
+  padding: 12px 10px; /* Reducimos un poco el padding lateral */
+  white-space: nowrap; /* Evita que el texto se rompa en dos líneas */
+}

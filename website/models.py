@@ -114,8 +114,8 @@ class Servicio(models.Model):
         verbose_name = "Servicio"
         verbose_name_plural = "Servicios"
 
-        def __str__(self):
-            return f"{self.nombre_serv}({self.duracion_minutos}min) - ${self.precio_serv:,.0f}"
+    def __str__(self):
+        return f"{self.nombre_serv}({self.duracion_minutos}min) - ${self.precio_serv:,.0f}"
 
 #disponibilidad horaria semanal
 class Disponibilidad(models.Model):
@@ -134,7 +134,7 @@ class Disponibilidad(models.Model):
         related_name='disponibilidades',
         limit_choices_to={'rol__in':
                           ['profesional', 'admin']},
-                          verbose_name= "PRofesional"
+                          verbose_name= "Profesional"
     )
     dia_semana= models.CharField(
         max_length=10,

@@ -1,37 +1,60 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}RG Beauty Spa {% endblock %}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .bg-pasteldink { background-color: #F4C2C2; }
-        .text-pastelink { color: #D47A7A; }
-    </style>
-</head>
-<body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
-    <nav class="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center">
-        <a href="{% url 'reserva_paso1' %}" class="text-2x1 font-serif font-bold text-pastelink"> RG Beauty SPA</a>
-        <div class="flex items-center space-x-3">
-            {% if user.is_authenticated %}
-                <span class="text-xs font-medium text-gray-600"> Hola, {{ user.first_name }}</span>
-                {% if user.rol in 'admin, profesional' %}
-                    <a href="{% url 'admin_dashboard' %}" class="bg-gray-800 text-white px-3 py-1 rounded text-xs">Panel Admin</a>
-                {% endif %}
-                <a href="{% url 'logout' %}" class="text-xs text-red-500 hover:underline">Salir</a>
-            {% else %}
-                <a href="{% url 'registro' %}" class="text-xs font-semibold bg-pasteldink text-gray-900 px-3 py-1.5 rounded-lg hover:opacity-90">Registrarse</a>
-            {% endif %}
-         </div>
-    </nav>
-
-    <main class="flex.grow container mx-auto px-4 py-8 max-w-2x1">
-        {% block content %}{% endblock %}
-    </main>
+    <title>{% block title %}RG Beauty Spa{% endblock %}</title>
     
-    <footer class="bg-white border-t text-center py-4 text-xs text-gray-400">
-        &copy; 2026 RG Beauty Spa - Copiapó, Chile.
-    </footer>
+    <!-- Fuentes del prototipo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tu archivo CSS estático -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <div class="client-shell">
+        <!-- Header Cliente -->
+        <header class="client-header">
+            <a href="{% url 'reserva_paso1' %}" class="brand">
+                <span class="brand-mark">RG</span>
+                <span class="brand-copy"><strong>RG Beauty</strong><small>STUDIO & SPA</small></span>
+            </a>
+            
+            <div class="header-actions">
+                <span class="secure">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                    Reserva segura
+                </span>
+                
+                {% if user.is_authenticated %}
+                    <!-- Botón de Admin solo para admin o profesional -->
+                    {% if user.rol == 'admin' or user.rol == 'profesional' %}
+                        <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary btn-sm">Panel Admin</a>
+                    {% endif %}
+                    <a href="{% url 'mis_citas' %}" class="btn btn-ghost btn-sm">Mis Citas</a>
+                    <a href="{% url 'cuenta' %}" class="btn btn-ghost btn-sm">Mi Cuenta</a>
+                    <a href="{% url 'logout' %}" class="btn btn-ghost btn-logout">Salir</a>
+                {% else %}
+                    <!-- Botones para usuarios no logueados -->
+                    <a href="{% url 'registro' %}" class="btn btn-secondary btn-sm">Registrarse</a>
+                    <a href="{% url 'login' %}" class="btn btn-primary btn-sm">Ingresar</a>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Contenido Principal -->
+        <main class="client-main">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            © 2026 RG Beauty Spa <span>·</span> Copiapó, Chile <span>·</span> Reserva protegida
+        </footer>
+    </div>
+    {% include '_logout_modal.html' %}
 </body>
 </html>

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Paso 2: Especialista y Fecha - RG Beauty Spa{% endblock %}
+
+{% block content %}
+<section class="step-panel">
+    <div class="eyebrow">PASO 2</div>
+    <h1>¿Con quién y cuándo?</h1>
+    <p class="lead">Servicio: <strong>{{ servicio.nombre_serv }}</strong> ({{ servicio.duracion_minutos }} min)</p>
+    
+    <form method="GET" action="" id="formPaso2">
+        <div class="choice-label">Profesional</div>
+        <div class="pro-grid">
+            {% for prof in profesionales %}
+            <label class="pro-card">
+                <input type="radio" name="profesional_id" value="{{ prof.id }}" class="hidden-input" {% if forloop.first %}checked{% endif %} onchange="actualizarAccion({{ prof.id }})">
+                <span class="avatar">{{ prof.first_name|first }}</span>
+                <span>
+                    <strong>{{ prof.get_full_name|default:prof.username }}</strong>
+                    <small class="text-capitalize">{{ prof.rol }}</small>
+                </span>
+                <span class="radio-dot"></span>
+            </label>
+            {% endfor %}
+        </div>
+
+        <div class="calendar-card">
+            <div class="calendar-head">
+                <strong>Selecciona la fecha</strong>
+            </div>
+            <input type="date" id="fechaCita" name="fecha" value="{{ hoy|default:'' }}" class="calendar-input-full" required>
+        </div>
+
+        <button type="button" onclick="irAPaso3()" class="btn btn-primary full">
+            Ver Horarios Libres &rarr;
+        </button>
+    </form>
+</section>
+
+<script>
+    let servicioId = {{ servicio.id }};
+    let profSeleccionado = document.querySelector('input[name="profesional_id"]:checked')?.value || "{{ profesionales.0.id }}";
+    
+    function actualizarAccion(profId) {
+        profSeleccionado = profId;
+    }
+    function irAPaso3() {
+        const fecha = document.getElementById('fechaCita').value;
+        if (!fecha) {
+            alert('Por favor selecciona una fecha');
+            return;
+        }
+        window.location.href = `/reserva/paso3/${servicioId}/${profSeleccionado}/?fecha=${fecha}`;
+    }
+</script>
+{% endblock %}
