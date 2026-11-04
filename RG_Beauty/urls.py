@@ -43,7 +43,7 @@ urlpatterns = [
     path('mis-citas/<int:pk>/', views.detalle_cita, name='detalle_cita'),
     path('mis-citas/<int:pk>/editar/', views.editar_cita, name='editar_cita'),
     path('mis-citas/<int:pk>/eliminar/', views.eliminar_cita, name='eliminar_cita'),
-
+    path('api/verificar-disponibilidad/<int:servicio_id>/<int:empleado_id>/', views.api_verificar_disponibilidad, name='api_verificar_disponibilidad'),
     # Mi Cuenta
     path('cuenta/', views.cuenta, name='cuenta'),
     path('cuenta/editar/', views.editar_perfil, name='editar_perfil'),
