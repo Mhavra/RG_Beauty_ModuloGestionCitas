@@ -21,7 +21,12 @@ class Usuario(AbstractUser):
         ('admin', 'Administradora'),
         ('estilista', 'Estilista'),
     )
-    #email personalizado para que tengan uno unico para iniciar sesion como otra opcion
+    rut = models.CharField(
+        max_length=12, 
+        unique=True, 
+        verbose_name="RUT",
+        default=''
+    )
     email =models.EmailField(
         unique=True,
         verbose_name='Correo Electronico',

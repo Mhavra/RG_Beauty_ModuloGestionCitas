@@ -173,10 +173,11 @@ def registro(request):
     if request.method == 'POST':
         form = RegistroClienteForm(request.POST)
         if form.is_valid():
-            Usuario = form.save()
-            login(request, Usuario)
-            messages.success(request, f'Bienvenido, {Usuario.username}.')
+            nuevo_usuario = form.save()
+            login(request, nuevo_usuario)
+            messages.success(request, f'Bienvenido, {nuevo_usuario.first_name}.')
             return redirect('home')
     else:
         form = RegistroClienteForm()
+        
     return render(request, 'registro.html', {'form': form})

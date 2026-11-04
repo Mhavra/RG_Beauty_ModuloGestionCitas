@@ -79,7 +79,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'rg_beauty_DB',
         'USER': 'root',
-        'PASSWORD': '123456',
+        'PASSWORD': '1234',
         'HOST': 'localhost',
         'PORT': '3306'
     }
