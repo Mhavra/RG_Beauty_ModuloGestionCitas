@@ -105,7 +105,7 @@ class CitaAdmin(admin.ModelAdmin):
         'empleado__first_name', 
         'empleado__last_name'
     )
-    date_hierarchy = 'fecha_hora_cita' # Navegación rápida por fechas arriba a la derecha
+    #date_hierarchy = 'fecha_hora_cita' # Navegación rápida por fechas arriba a la derecha
     inlines = [CitaServicioInline, PagoInline]
     
     # Organización del formulario de la Cita
@@ -133,5 +133,5 @@ class PagoAdmin(admin.ModelAdmin):
     list_display = ('id', 'fecha_pago', 'cliente', 'monto', 'metodo_pago', 'tipo_pago', 'estado', 'cita')
     list_filter = ('estado', 'metodo_pago', 'tipo_pago', 'fecha_pago')
     search_fields = ('cliente__first_name', 'cliente__last_name', 'transaccion_id', 'cita__id')
-    date_hierarchy = 'fecha_pago'
+    #date_hierarchy = 'fecha_pago'
     readonly_fields = ('fecha_pago', 'transaccion_id')
