@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Cita #{{ cita.id }} - RG Beauty Spa{% endblock %}
+
+{% block content %}
+<section class="step-panel">
+    <div class="eyebrow">DETALLE DE CITA</div>
+    <h1>Cita #{{ cita.id }}</h1>
+    <p class="lead">Información completa de tu reserva.</p>
+
+    <div class="appointment-card">
+        <div class="appointment-top">
+            <span class="appointment-info">
+                <small>SERVICIOS RESERVADOS</small>
+                {% for s in cita.servicios.all %}
+                    <strong>{{ s.nombre_serv }}</strong>
+                    <em>{{ s.duracion_minutos }} min · ${{ s.precio_serv|floatformat:"0" }} CLP</em>
+                {% empty %}
+                    <strong>Sin servicios</strong>
+                {% endfor %}
+            </span>
+        </div>
+        <div class="detail-grid">
+            <span><small>PROFESIONAL</small><b>{{ cita.empleado.get_full_name|default:cita.empleado.username }}</b></span>
+            <span><small>FECHA Y HORA</small><b>{{ cita.fecha_hora_cita|date:"d/m/Y H:i" }} hrs</b></span>
+            <span><small>ESTADO</small><b>{{ cita.get_estado_display }}</b></span>
+            <span><small>ESTADO DEL ABONO</small><b>{{ cita.get_estado_abono_display }}</b></span>
+        </div>
+    </div>
+
+    <div class="price-card">
+        <div><span>Abono pagado</span><b>${{ cita.monto_abono|floatformat:"0" }} CLP</b></div>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-top:20px; flex-wrap:wrap;">
+        <a href="{% url 'editar_cita' cita.pk %}" class="btn btn-primary">Editar cita</a>
+        <a href="{% url 'eliminar_cita' cita.pk %}" class="btn btn-secondary" style="color:#b95151;">Eliminar cita</a>
+        <a href="{% url 'mis_citas' %}" class="btn btn-ghost">← Volver a Mis Citas</a>
+    </div>
+</section>
+{% endblock %}

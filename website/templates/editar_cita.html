@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Editar Cita #{{ cita.id }} - RG Beauty Spa{% endblock %}
+
+{% block content %}
+<section class="step-panel">
+    <div class="eyebrow">EDITAR RESERVA</div>
+    <h1>Editar Cita #{{ cita.id }}</h1>
+    <p class="lead">Puedes modificar cualquier dato de tu reserva.</p>
+
+    <form method="post" class="auth-card" style="background:#fff; padding:24px; border-radius:16px; border:1px solid #ebe7e8;">
+        {% csrf_token %}
+
+        {% for field in form %}
+        <div class="form-group" style="margin-bottom:16px;">
+            <label style="font-weight:600; font-size:13px; display:block; margin-bottom:6px;">{{ field.label }}:</label>
+            {{ field }}
+            {% if field.help_text %}<small style="color:#716c70; font-size:11px;">{{ field.help_text }}</small>{% endif %}
+            {% if field.errors %}<span class="error-text" style="color:#b95151; font-size:12px;">{{ field.errors.0 }}</span>{% endif %}
+        </div>
+        {% endfor %}
+
+        {% if form.non_field_errors %}
+            <div class="error-text" style="color:#b95151; font-size:12px;">{{ form.non_field_errors.0 }}</div>
+        {% endif %}
+
+        <div style="display:flex; gap:8px; margin-top:20px;">
+            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            <a href="{% url 'detalle_cita' cita.pk %}" class="btn btn-ghost">Cancelar</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

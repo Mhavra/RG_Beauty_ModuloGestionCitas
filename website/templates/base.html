@@ -34,7 +34,8 @@
                     {% if user.rol == 'admin' or user.rol == 'profesional' %}
                         <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary btn-sm">Panel Admin</a>
                     {% endif %}
-                    <!-- Botón de Salir -->
+                    <a href="{% url 'mis_citas' %}" class="btn btn-ghost btn-sm">Mis Citas</a>
+                    <a href="{% url 'cuenta' %}" class="btn btn-ghost btn-sm">Mi Cuenta</a>
                     <a href="{% url 'logout' %}" class="btn btn-ghost btn-logout">Salir</a>
                 {% else %}
                     <!-- Botones para usuarios no logueados -->
