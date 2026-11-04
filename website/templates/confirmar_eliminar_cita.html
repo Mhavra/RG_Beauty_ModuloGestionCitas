@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Eliminar Cita #{{ cita.id }} - RG Beauty Spa{% endblock %}
+{% block title %}Cancelar Cita #{{ cita.id }} - RG Beauty Spa{% endblock %}
 
 {% block content %}
 <section class="step-panel text-center">
@@ -9,6 +9,10 @@
         Vas a cancelar la <strong>Cita #{{ cita.id }}</strong> del {{ cita.fecha_hora_cita|date:"d/m/Y H:i" }} hrs.
         Esta acción no se puede deshacer.
     </p>
+    
+    <div class="notice" style="background: #fff4f4; border-color: #f4c2c2; color: #b95151; margin-bottom: 20px; padding: 12px; border-radius: 8px; font-size: 13px; text-align: left;">
+        <strong>Política de cancelación:</strong> Recuerda que el abono pagado no será devuelto de forma automática. Para solicitar un reembolso o reagendar, contacta directamente con la administradora del salón.
+    </div>
 
     <form method="POST" class="mt-24">
         {% csrf_token %}
@@ -16,7 +20,7 @@
             <button type="submit" class="btn btn-danger">
                 Sí, eliminar
             </button>
-            <a href="{% url 'detalle_cita' cita.pk %}" class="btn btn-ghost">Cancelar</a>
+            <a href="{% url 'detalle_cita' cita.pk %}" class="btn btn-ghost">No cancelar, volver</a>
         </div>
     </form>
 </section>
