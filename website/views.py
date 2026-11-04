@@ -250,14 +250,61 @@ def despachar_notificacion_cita(cita):
     cita.historial_notificaciones.append(log_evento) 
     cita.save() 
  
-@login_required 
-def admin_dashboard(request): 
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']): 
-        return redirect('reserva_paso1') 
-    citas = Cita.objects.all().order_by('-fecha_hora_cita') 
-    form_reporte = FiltroReporteForm() 
-    config = ConfiguracionSistema.objects.first() 
-    return render(request, 'admin_dashboard.html', {'citas': citas, 'form_reporte': form_reporte, 'config': config})
+@login_required
+def admin_dashboard(request):
+    # Permitir solo a los roles autorizados
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+        messages.error(request, 'No tienes permiso para acceder al panel de administración.')
+        return redirect('reserva_paso1')
+
+    # Traer citas optimizadas para evitar el problema N+1
+    citas = (
+        Cita.objects
+        .select_related('cliente', 'empleado')
+        .prefetch_related('servicios')
+        .order_by('-fecha_hora_cita')
+    )
+    
+    form_reporte = FiltroReporteForm()
+    config = ConfiguracionSistema.objects.first()
+
+    # Calcular algunas estadísticas simples para mostrar en las tarjetas
+    total_citas = citas.count()
+    citas_confirmadas = citas.filter(estado='confirmada').count()
+    citas_canceladas = citas.filter(estado='cancelada').count()
+
+    return render(request, 'admin_dashboard.html', {
+        'citas': citas,
+        'form_reporte': form_reporte,
+        'config': config,
+        'total_citas': total_citas,
+        'citas_confirmadas': citas_confirmadas,
+        'citas_canceladas': citas_canceladas,
+    })
+
+
+@login_required
+def admin_cambiar_estado(request, pk):
+    """Vista que permite a la dueña cambiar el estado de una cita desde el panel web."""
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+        raise PermissionDenied('No tienes permiso para realizar esta acción.')
+
+    cita = get_object_or_404(Cita, pk=pk)
+    
+    if request.method == 'POST':
+        nuevo_estado = request.POST.get('estado')
+        
+        # Validar que el estado enviado sea uno de los permitidos en el modelo
+        estados_validos = [opcion[0] for opcion in Cita.ESTADOS_CITA]
+        
+        if nuevo_estado in estados_validos:
+            cita.estado = nuevo_estado
+            cita.save()
+            messages.success(request, f'Cita #{cita.id} actualizada a: {cita.get_estado_display()}.')
+        else:
+            messages.error(request, 'El estado enviado no es válido.')
+            
+    return redirect('admin_dashboard')
 
 def registro(request):
     if request.method == 'POST':
