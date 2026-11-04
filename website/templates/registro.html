@@ -1,17 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro</title>
-</head>
-<body>
-    <h1>Registro de Usuario</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit"> Registrar Usuario</button>
-    </form>
-    
-</body>
-</html>
+{% extends 'base.html' %}
+{% block title %}Crear Cuenta - RG Beauty{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="login-card auth-card">
+        <div class="auth-header">
+            <div class="eyebrow">ÚNETE A NOSOTROS</div>
+            <h1>Crear Cuenta</h1>
+            <p class="lead">Regístrate para reservar tu hora online.</p>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            
+            {% for field in form %}
+            <div class="form-group">
+                <label>{{ field.label }}:</label>
+                {{ field }}
+                
+                {% if field.help_text %}
+                    <span class="help-text">{{ field.help_text }}</span>
+                {% endif %}
+                
+                {% if field.errors %}
+                    <span class="error-text">{{ field.errors.0 }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <button type="submit" class="btn btn-primary full btn-block">
+                Registrar Usuario
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p class="lead text-small">¿Ya tienes una cuenta?</p>
+            <a href="{% url 'login' %}" class="btn btn-secondary full link-btn">Inicia sesión aquí</a>
+        </div>
+    </div>
+</div>
+{% endblock %}  

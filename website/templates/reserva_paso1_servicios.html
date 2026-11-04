@@ -1,22 +1,33 @@
 {% extends 'base.html' %}
-{% block title %}Seleccionar Servicio - RG Beauty {% endblock %}
+{% block title %}Seleccionar Servicio - RG Beauty{% endblock %}
+
 {% block content %}
-
-<h2 class="text-2xl font-serif text-center font-bold mb-1">¿Cómo quieres sentirte hoy?</h2>
-<p class="text-center text-gray-500 text-xs mb-6">Reserva tu hora online con la duración técnica real de cada servicio.</p>
-
-<div class="space-y-3">
-    {% for s in servicios %}
-    <div class="bg-white p-4 rounded-xl border flex justify-between items-center hover:border-pink-300 transition">
-        <h3 class="font-bold text-base text-gray-900">{{ s.nombre_serv }}</h3>
-        <p class="text-xs text-gray-500"> {{ s.duracion_minutos }} </p>
-        <div class="text-right">
-            <span class="block font-bold text-gray-900">${{ s.precio_serv|floatformat:0 }} CLP</span>
-            <a href="{% url 'reserva_paso2' s.id %}" class="inline-block mt-1 bg-pasteldink text-gray-900 font-semibold px-3 py-1.5 rounded-lg text-xs">
-                Reservar &rarr;
-            </a>
-        </div>
+<section class="step-panel">
+    <div class="eyebrow">TU MOMENTO, A TU RITMO</div>
+    <h1>¿Cómo quieres sentirte hoy?</h1>
+    <p class="lead">Elige tu servicio y reserva en menos de 2 minutos.</p>
+    
+    <div class="service-list">
+        {% for s in servicios %}
+        <a href="{% url 'reserva_paso2' s.id %}" class="service-card">
+            <img src="https://images.unsplash.com/photo-1470259078422-826894b933aa?auto=format&fit=crop&w=600&q=85" alt="{{ s.nombre_serv }}" />
+            <div class="service-info">
+                <span class="mini-tag">Servicio</span>
+                <h2>{{ s.nombre_serv }}</h2>
+                <span class="meta">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                    {{ s.duracion_minutos }} min
+                </span>
+            </div>
+            <div class="service-price">
+                <small>Desde</small>
+                <strong>${{ s.precio_serv|floatformat:"0" }}</strong>
+                <span class="radio-dot"></span>
+            </div>
+        </a>
+        {% empty %}
+        <p class="lead empty-state-msg">Aún no hay servicios disponibles.</p>
+        {% endfor %}
     </div>
-    {% endfor %}
-</div>
+</section>
 {% endblock %}

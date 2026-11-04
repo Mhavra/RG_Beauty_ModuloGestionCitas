@@ -15,7 +15,8 @@ from django.conf import settings
 from .models import (Servicio, Usuario, Cita, CitaServicio, Pago,
 Disponibilidad, BloqueoHorario, ConfiguracionSistema)
 from .forms import RegistroClienteForm, LoginForm, FiltroReporteForm
-
+from decimal import Decimal
+from django.utils import timezone
 
 def login_view(request): 
     if request.method == 'POST': 
@@ -58,15 +59,92 @@ def reserva_paso2_fecha(request, servicio_id):
     profesionales = Usuario.objects.filter(rol__in=['admin', 'profesional']) 
     return render(request, 'reserva_paso2_fecha.html', {'servicio': servicio, 'profesionales': profesionales})
 
-
 def reserva_paso3_horarios(request, servicio_id, empleado_id): 
     servicio = get_object_or_404(Servicio, pk=servicio_id) 
     empleado = get_object_or_404(Usuario, pk=empleado_id) 
+    
     fecha_str = request.GET.get('fecha', datetime.date.today().strftime('%Y-%m-%d')) 
-    horarios_libres = ['09:00', '11:00', '15:00', '17:00'] 
-    return render(request, 'reserva_paso3_horarios.html', {'servicio': servicio, 'empleado': empleado, 'fecha': fecha_str, 'horarios': horarios_libres}) 
+    fecha_obj = datetime.datetime.strptime(fecha_str, '%Y-%m-%d').date()
+    
+    dias_semana = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo']
+    nombre_dia = dias_semana[fecha_obj.weekday()]
+    
+    disponibilidad = Disponibilidad.objects.filter(
+        empleado=empleado, 
+        dia_semana=nombre_dia
+    ).first()
+    
+    horarios_libres = []
+    
+    if disponibilidad:
+        hora_inicio_dia = datetime.datetime.combine(fecha_obj, disponibilidad.hora_inicio)
+        hora_fin_dia = datetime.datetime.combine(fecha_obj, disponibilidad.hora_fin)
+        
+        hay_bloqueo = BloqueoHorario.objects.filter(
+            empleado=empleado,
+            fecha_inicio__lte=fecha_obj,
+            fecha_fin__gte=fecha_obj
+        ).exists()
+        
+        if not hay_bloqueo:
+            citas_existentes = Cita.objects.filter(
+                empleado=empleado,
+                estado__in=['pendiente', 'confirmada']
+            )
+            
+            print("\n" + "="*50)
+            print(f"DEBUG: BUSCANDO CITAS PARA EL DÍA: {fecha_obj}")
+            print(f"DEBUG: EMPLEADO SELECCIONADO: {empleado.get_full_name()} (ID: {empleado.id})")
+            
+            rangos_ocupados = []
+            for cita in citas_existentes:
+                # Convierte a Hora local
+                cita_inicio_local = timezone.localtime(cita.fecha_hora_cita).replace(tzinfo=None)
+                
+                print(f" -> Revisando Cita #{cita.id}: Fecha BD (local) = {cita_inicio_local}")
+                
+                if cita_inicio_local.date() == fecha_obj:
+                    servicios_de_cita = cita.citaservicio_set.all()
+                    if servicios_de_cita.exists():
+                        duracion_cita = sum([cs.servicio.duracion_minutos for cs in servicios_de_cita])
+                    else:
+                        duracion_cita = 60
+                    
+                    cita_fin_local = cita_inicio_local + datetime.timedelta(minutes=duracion_cita)
+                    rangos_ocupados.append((cita_inicio_local, cita_fin_local))
+                    print(f"    [OCUPADO] Bloque añadido: {cita_inicio_local.strftime('%H:%M')} a {cita_fin_local.strftime('%H:%M')} ({duracion_cita} min)")
+                else:
+                    print(f"    [IGNORADA] No es del día seleccionado.")
+            
+            duracion_servicio = datetime.timedelta(minutes=servicio.duracion_minutos)
+            intervalo = datetime.timedelta(minutes=30)
+            hora_candidata = hora_inicio_dia
+            
+            print(f"DEBUG: El servicio a reservar dura {servicio.duracion_minutos} minutos.")
+            
+            while hora_candidata + duracion_servicio <= hora_fin_dia:
+                fin_candidato = hora_candidata + duracion_servicio
+                solapa = False
+                
+                for inicio_ocupado, fin_ocupado in rangos_ocupados:
+                    if hora_candidata < fin_ocupado and fin_candidato > inicio_ocupado:
+                        solapa = True
+                        print(f"    [SOLAPA] Hora {hora_candidata.strftime('%H:%M')} - {fin_candidato.strftime('%H:%M')} choca con {inicio_ocupado.strftime('%H:%M')} - {fin_ocupado.strftime('%H:%M')}")
+                        break
+                
+                if not solapa:
+                    horarios_libres.append(hora_candidata.strftime('%H:%M'))
+                
+                hora_candidata += intervalo
+            print("="*50 + "\n")
 
- 
+    return render(request, 'reserva_paso3_horarios.html', {
+        'servicio': servicio, 
+        'empleado': empleado, 
+        'fecha': fecha_str, 
+        'horarios': horarios_libres
+    })
+
 @login_required 
 def reserva_paso4_resumen(request): 
     servicio_id = request.POST.get('servicio_id') 
@@ -77,13 +155,13 @@ def reserva_paso4_resumen(request):
     empleado = get_object_or_404(Usuario, pk=empleado_id) 
      
     config = ConfiguracionSistema.objects.first() 
-    porcentaje = config.porcentaje_abono if config else 50.00 
+    porcentaje = config.porcentaje_abono if config else Decimal('50.00') 
      
     monto_total = servicio.precio_serv 
     if config and config.permite_monto_fijo: 
         monto_abono = config.monto_fijo_abono 
     else: 
-        monto_abono = (monto_total * (porcentaje / 100)) 
+        monto_abono = (monto_total * (porcentaje / Decimal('100'))) 
          
     saldo_salon = monto_total - monto_abono 
      
@@ -99,11 +177,13 @@ def reserva_paso5_procesar_pago(request):
     if request.method == 'POST': 
         servicio_id = request.POST.get('servicio_id') 
         empleado_id = request.POST.get('empleado_id') 
-        fecha_hora_str = request.POST.get('fecha_hora') 
-        monto_abono = request.POST.get('monto_abono') 
+        fecha_hora_str = request.POST.get('fecha_hora')
+        monto_abono_raw = request.POST.get('monto_abono', '0') 
+        monto_abono = Decimal(monto_abono_raw.replace(',','.'))
         metodo_pago = request.POST.get('metodo_pago', 'webpay') 
          
-        fecha_hora = datetime.datetime.strptime(fecha_hora_str, '%Y-%m-%d %H:%M') 
+        fecha_hora_naive = datetime.datetime.strptime(fecha_hora_str, '%Y-%m-%d %H:%M') 
+        fecha_hora = timezone.make_aware(fecha_hora_naive, timezone.get_current_timezone())
          
         try: 
             with transaction.atomic(): 
@@ -133,8 +213,6 @@ def reserva_paso5_procesar_pago(request):
         except Exception as e: 
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-
-
 def reserva_paso6_exito(request, cita_id): 
     cita = get_object_or_404(Cita, pk=cita_id) 
     return render(request, 'reserva_paso6_exito.html', {'cita': cita}) 
@@ -161,8 +239,9 @@ def despachar_notificacion_cita(cita):
     cita.save() 
  
 @login_required 
+@login_required 
 def admin_dashboard(request): 
-    if request.user.rol not in ['admin', 'profesional']: 
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']): 
         return redirect('reserva_paso1') 
     citas = Cita.objects.all().order_by('-fecha_hora_cita') 
     form_reporte = FiltroReporteForm() 
