@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Mi Cuenta - RG Beauty Spa{% endblock %}
+
+{% block content %}
+<section class="step-panel">
+    <div class="eyebrow">MI PERFIL</div>
+    <h1>Mi Cuenta</h1>
+    <p class="lead">Revisa y actualiza tus datos personales.</p>
+
+    <div class="appointment-card">
+        <div class="detail-grid">
+            <span><small>NOMBRE</small><b>{{ user.get_full_name|default:"—" }}</b></span>
+            <span><small>USUARIO</small><b>{{ user.username }}</b></span>
+            <span><small>CORREO ELECTRÓNICO</small><b>{{ user.email }}</b></span>
+            <span><small>TELÉFONO</small><b>{{ user.telefono|default:"—" }}</b></span>
+            <span><small>CITAS REGISTRADAS</small><b>{{ total_citas }}</b></span>
+        </div>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-top:20px; flex-wrap:wrap;">
+        <a href="{% url 'editar_perfil' %}" class="btn btn-primary">Editar perfil</a>
+        <a href="{% url 'cambiar_password' %}" class="btn btn-secondary">Cambiar contraseña</a>
+        <a href="{% url 'mis_citas' %}" class="btn btn-ghost">Ver mis citas</a>
+    </div>
+</section>
+{% endblock %}

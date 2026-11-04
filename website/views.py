@@ -3,7 +3,6 @@ from django.contrib import messages
 
 
 # Create your views here.
-# Create your views here.
 import datetime
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
@@ -14,9 +13,17 @@ from django.core.mail import send_mail
 from django.conf import settings
 from .models import (Servicio, Usuario, Cita, CitaServicio, Pago,
 Disponibilidad, BloqueoHorario, ConfiguracionSistema)
-from .forms import RegistroClienteForm, LoginForm, FiltroReporteForm
+from .forms import RegistroClienteForm, LoginForm, FiltroReporteForm, CitaForm, EditarPerfilForm
 from decimal import Decimal
 from django.utils import timezone
+#imports para la cuenta del usuario/cliente 
+from django.contrib.auth.views import PasswordChangeView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.urls import reverse_lazy
+from .forms import CitaForm, EditarPerfilForm
 
 
 def home_view(request):
@@ -264,3 +271,120 @@ def registro(request):
     else:
         form = RegistroClienteForm()
     return render(request, 'registro.html', {'form': form})
+
+# MIS CITAS (listado, edición, eliminación del cliente)
+
+@login_required
+def mis_citas(request):
+    qs = (
+        Cita.objects
+        .filter(cliente=request.user)
+        .select_related('empleado')
+        .prefetch_related('servicios')
+        .order_by('-fecha_hora_cita')
+    )
+
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(
+            Q(empleado__first_name__icontains=q)
+            | Q(empleado__last_name__icontains=q)
+            | Q(servicios__nombre_serv__icontains=q)
+        ).distinct()
+
+    estado = request.GET.get('estado', '').strip()
+    if estado:
+        qs = qs.filter(estado=estado)
+
+    paginator = Paginator(qs, 5)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    params = request.GET.copy()
+    params.pop('page', None)
+    querystring = params.urlencode()
+
+    return render(request, 'mis_citas.html', {
+        'page_obj': page_obj,
+        'querystring': querystring,
+        'q': q,
+        'estado': estado,
+        'estados': Cita.ESTADOS_CITA,
+    })
+
+# detalle de citas, editar y eliminar citas del cliente
+@login_required
+def detalle_cita(request, pk):
+    cita = get_object_or_404(
+        Cita.objects.select_related('empleado').prefetch_related('servicios'),
+        pk=pk
+    )
+    if cita.cliente != request.user:
+        raise PermissionDenied('No tienes permiso para ver esta cita.')
+    return render(request, 'detalle_cita.html', {'cita': cita})
+
+
+@login_required
+def editar_cita(request, pk):
+    cita = get_object_or_404(Cita, pk=pk)
+    if cita.cliente != request.user:
+        raise PermissionDenied('Solo puedes editar tus propias citas.')
+
+    if request.method == 'POST':
+        form = CitaForm(request.POST, instance=cita)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Cita actualizada correctamente.')
+            return redirect('detalle_cita', pk=cita.pk)
+        else:
+            messages.error(request, 'Revisa los datos del formulario.')
+    else:
+        form = CitaForm(instance=cita)
+
+    return render(request, 'editar_cita.html', {'form': form, 'cita': cita})
+
+
+@login_required
+def eliminar_cita(request, pk):
+    cita = get_object_or_404(Cita, pk=pk)
+    if cita.cliente != request.user:
+        raise PermissionDenied('Solo puedes eliminar tus propias citas.')
+
+    if request.method == 'POST':
+        cita.delete()
+        messages.success(request, f'Cita #{pk} eliminada correctamente.')
+        return redirect('mis_citas')
+
+    return render(request, 'confirmar_eliminar_cita.html', {'cita': cita})
+
+
+# Mi cuenta (perfil, edición, cambio de contraseña)
+
+@login_required
+def cuenta(request):
+    total_citas = Cita.objects.filter(cliente=request.user).count()
+    return render(request, 'cuenta.html', {'total_citas': total_citas})
+
+
+@login_required
+def editar_perfil(request):
+    if request.method == 'POST':
+        form = EditarPerfilForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Perfil actualizado correctamente.')
+            return redirect('cuenta')
+        else:
+            messages.error(request, 'Revisa los datos del formulario.')
+    else:
+        form = EditarPerfilForm(instance=request.user)
+
+    return render(request, 'editar_perfil.html', {'form': form})
+
+#cambiar contraseña de cliente
+class CambiarPasswordView(LoginRequiredMixin, PasswordChangeView):
+    template_name = 'cambiar_password.html'
+    success_url = reverse_lazy('cuenta')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Tu contraseña fue actualizada correctamente.')
+        return super().form_valid(form)

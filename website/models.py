@@ -109,8 +109,8 @@ class Servicio(models.Model):
         verbose_name = "Servicio"
         verbose_name_plural = "Servicios"
 
-        def __str__(self):
-            return f"{self.nombre_serv}({self.duracion_minutos}min) - ${self.precio_serv:,.0f}"
+    def __str__(self):
+        return f"{self.nombre_serv}({self.duracion_minutos}min) - ${self.precio_serv:,.0f}"
 
 #disponibilidad horaria semanal
 class Disponibilidad(models.Model):
