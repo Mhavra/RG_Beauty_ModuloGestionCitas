@@ -173,13 +173,13 @@ def reserva_paso4_resumen(request):
 
 
 @login_required 
-@login_required 
 def reserva_paso5_procesar_pago(request): 
     if request.method == 'POST': 
         servicio_id = request.POST.get('servicio_id') 
         empleado_id = request.POST.get('empleado_id') 
-        fecha_hora_str = request.POST.get('fecha_hora') 
-        monto_abono = request.POST.get('monto_abono') 
+        fecha_hora_str = request.POST.get('fecha_hora')
+        monto_abono_raw = request.POST.get('monto_abono', '0') 
+        monto_abono = Decimal(monto_abono_raw.replace(',','.'))
         metodo_pago = request.POST.get('metodo_pago', 'webpay') 
          
         fecha_hora_naive = datetime.datetime.strptime(fecha_hora_str, '%Y-%m-%d %H:%M') 
