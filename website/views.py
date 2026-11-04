@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
 
 
 # Create your views here.
@@ -172,3 +173,15 @@ def admin_dashboard(request):
     form_reporte = FiltroReporteForm() 
     config = ConfiguracionSistema.objects.first() 
     return render(request, 'admin_dashboard.html', {'citas': citas, 'form_reporte': form_reporte, 'config': config})
+
+def registro(request):
+    if request.method == 'POST':
+        form = RegistroClienteForm(request.POST)
+        if form.is_valid():
+            Usuario = form.save()
+            login(request, Usuario)
+            messages.success(request, f'Bienvenido, {Usuario.username}.')
+            return redirect('home')
+    else:
+        form = RegistroClienteForm()
+    return render(request, 'registro.html', {'form': form})

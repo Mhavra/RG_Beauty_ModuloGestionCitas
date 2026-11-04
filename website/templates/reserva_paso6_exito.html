@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}¡Reserva Confirmada! - RG Beauty Spa{% endblock %}
+
+{% block content %}
+<div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center space-y-4 max-w-lg mx-auto">
+    <!-- Icono de Exito -->
+
+    <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
+        ✔️
+    </div>
+
+    <div>
+        <h2 class="text-2xl font-serif font-bold text-gray-900">¡Tu momento está reservado!</h2>
+        <p class="text-xss text-gray-500 mt-1">Cita #{{ cita.id }} | Estado: Confirmada con Abono</p>
+    </div>
+
+    <!-- Comprobante de Reserva -->
+    
+    <div class="bg-gray-50 p-4 rounded-xl text-left text-xs space-y-2 my-4 border">
+        <p><strong>Cliente:</strong> {{ cita.cliente.get_full_name|default:cita.cliente.email }}</p>
+        <p><strong>Especialista:</strong> {{ cita.empleado.get_full_name|default:cita.empleado.first_name }}</p>
+        <p><strong>Fecha y Hora:</strong> {{ cita.fecha_hora_cita|date:"d/m/Y H:i" }}</p>
+        <p><strong>Abono Pagado:</strong> {{ cita.monto_abono|floatformat:0 }} CLP</p>
+        <p><strong>Estado del Abono:</strong> <span class="text-green-700 font-bold uppercase">{{ cita.get_estado_abono_display }}</span></p>
+    </div>
+
+    <!-- Notificación Automática -->
+    
+    <div class="text-xs text-green-700 bg-green-50 p-3 rounded-xl border border-green-200 text-lest flex items-start space-x-2">
+        <span>📱</span>
+        <p>Hemos enviado el comprobante a tu <strong>WhatsApp</strong>. En caso de intermitencia, se despachó automáticamente una copia de respaldo a tu <strong>correo electrónico</strong>.</p>
+    </div>
+
+    <!-- Acciones Finales -->
+    <div class="pt-2">
+        <a href="{% url 'reserva_paso1 %}" class="inline-block bg-pasteldink text-gray-900 font-bold px-6 py-2.5 rounded-xl text-xs hover:opacity-90 shadow-sm transition">
+            Volver al Inicio
+        </a>
+    </div>
+</div>
+{% endblock %}
+

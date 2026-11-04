@@ -12,7 +12,7 @@
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
     <nav class="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center">
-        <a href="{% url 'reserva_paso1' %}" class="text-2x1 font-serif font-bold text-pastelink"> RG Beauty SPA</a>
+        <a href="{% url 'reserva_paso1' %}" class="text-2xl font-serif font-bold text-pastelink"> RG Beauty SPA</a>
         <div class="flex items-center space-x-3">
             {% if user.is_authenticated %}
                 <span class="text-xs font-medium text-gray-600"> Hola, {{ user.first_name }}</span>
@@ -21,12 +21,12 @@
                 {% endif %}
                 <a href="{% url 'logout' %}" class="text-xs text-red-500 hover:underline">Salir</a>
             {% else %}
-                <a href="{% url 'login' %}" class="text-xs font-semibold bg-pasteldink text-gray-900 px-3 py-1.5 rounded-lg hover:opacity-90">Registrarse</a>
+                <a href="{% url 'registro' %}" class="text-xs font-semibold bg-pasteldink text-gray-900 px-3 py-1.5 rounded-lg hover:opacity-90">Registrarse</a>
             {% endif %}
          </div>
     </nav>
 
-    <main class="flex.grow container mx-auto px-4 py-8 max-w-2x1">
+    <main class="flex.grow container mx-auto px-4 py-8 max-w-2xl">
         {% block content %}{% endblock %}
     </main>
     
