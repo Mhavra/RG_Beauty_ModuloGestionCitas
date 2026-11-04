@@ -1,0 +1,36 @@
+<!-- templates/_logout_modal.html -->
+<dialog id="logout-modal" 
+        onclick="if(event.target === this) this.close()"
+        class="modal-dialog">
+    
+    <div class="modal-content">
+        <!-- Ícono -->
+        <div class="modal-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+        </div>
+
+        <h3>¿Cerrar sesión?</h3>
+        <p>Tendrás que volver a ingresar para continuar con tus reservas.</p>
+
+        <div class="modal-actions">
+            <!-- Botón Cancelar usando tu clase .btn-secondary -->
+            <button type="button" 
+                    onclick="this.closest('dialog').close()" 
+                    class="btn btn-secondary">
+                Cancelar
+            </button>
+            
+            <!-- Botón de Salir usando tu clase .btn-primary -->
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">
+                    Sí, salir
+                </button>
+            </form>
+        </div>
+    </div>
+</dialog>

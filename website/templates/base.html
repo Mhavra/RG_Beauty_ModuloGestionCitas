@@ -34,8 +34,11 @@
                     {% if user.rol == 'admin' or user.rol == 'profesional' %}
                         <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary btn-sm">Panel Admin</a>
                     {% endif %}
-                    <!-- Botón de Salir -->
-                    <a href="{% url 'logout' %}" class="btn btn-ghost btn-logout">Salir</a>
+                    <button type="button" 
+                            onclick="document.getElementById('logout-modal').showModal()" 
+                            class="btn btn-ghost btn-logout">
+                            Salir
+                    </button>
                 {% else %}
                     <!-- Botones para usuarios no logueados -->
                     <a href="{% url 'registro' %}" class="btn btn-secondary btn-sm">Registrarse</a>
@@ -54,5 +57,6 @@
             © 2026 RG Beauty Spa <span>·</span> Copiapó, Chile <span>·</span> Reserva protegida
         </footer>
     </div>
+    {% include '_logout_modal.html' %}
 </body>
 </html>
