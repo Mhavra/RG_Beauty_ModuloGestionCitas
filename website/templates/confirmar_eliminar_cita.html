@@ -2,18 +2,18 @@
 {% block title %}Eliminar Cita #{{ cita.id }} - RG Beauty Spa{% endblock %}
 
 {% block content %}
-<section class="step-panel" style="text-align:center;">
-    <div class="eyebrow">CONFIRMAR ELIMINACIÓN</div>
-    <h1>¿Eliminar esta cita?</h1>
+<section class="step-panel text-center">
+    <div class="eyebrow">CONFIRMAR CANCELACIÓN</div>
+    <h1>¿Cancelar esta cita?</h1>
     <p class="lead">
-        Vas a eliminar la <strong>Cita #{{ cita.id }}</strong> del {{ cita.fecha_hora_cita|date:"d/m/Y H:i" }} hrs.
+        Vas a cancelar la <strong>Cita #{{ cita.id }}</strong> del {{ cita.fecha_hora_cita|date:"d/m/Y H:i" }} hrs.
         Esta acción no se puede deshacer.
     </p>
 
-    <form method="post" style="margin-top:24px;">
+    <form method="POST" class="mt-24">
         {% csrf_token %}
-        <div style="display:flex; gap:12px; justify-content:center;">
-            <button type="submit" class="btn btn-primary" style="background:#b95151; color:#fff;">
+        <div class="flex-center-gap">
+            <button type="submit" class="btn btn-danger">
                 Sí, eliminar
             </button>
             <a href="{% url 'detalle_cita' cita.pk %}" class="btn btn-ghost">Cancelar</a>
