@@ -16,26 +16,26 @@
         <strong>#RGB-{{ cita.id }}</strong>
     </div>
 
-    <div class="confirmation-card" style="padding: 15px;">
-        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line);">
-            <span style="font-size: 12px; color: var(--muted);">Cliente:</span>
-            <b style="font-size: 12px;">{{ cita.cliente.get_full_name|default:cita.cliente.email }}</b>
+    <div class="confirmation-card success-details">
+        <div class="success-row">
+            <span class="success-label">Cliente:</span>
+            <b class="success-value">{{ cita.cliente.get_full_name|default:cita.cliente.email }}</b>
         </div>
-        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line);">
-            <span style="font-size: 12px; color: var(--muted);">Especialista:</span>
-            <b style="font-size: 12px;">{{ cita.empleado.get_full_name|default:cita.empleado.first_name }}</b>
+        <div class="success-row">
+            <span class="success-label">Especialista:</span>
+            <b class="success-value">{{ cita.empleado.get_full_name|default:cita.empleado.first_name }}</b>
         </div>
-        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line);">
-            <span style="font-size: 12px; color: var(--muted);">Fecha y Hora:</span>
-            <b style="font-size: 12px;">{{ cita.fecha_hora_cita|date:"d/m/Y H:i" }} hrs</b>
+        <div class="success-row">
+            <span class="success-label">Fecha y Hora:</span>
+            <b class="success-value">{{ cita.fecha_hora_cita|date:"d/m/Y H:i" }} hrs</b>
         </div>
-        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line);">
-            <span style="font-size: 12px; color: var(--muted);">Abono Pagado:</span>
-            <b style="font-size: 12px;">${{ cita.monto_abono|floatformat:"0" }} CLP</b>
+        <div class="success-row">
+            <span class="success-label">Abono Pagado:</span>
+            <b class="success-value">${{ cita.monto_abono|floatformat:"0" }} CLP</b>
         </div>
-        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-            <span style="font-size: 12px; color: var(--muted);">Estado del Abono:</span>
-            <b style="font-size: 12px; color: var(--green); text-transform: uppercase;">{{ cita.get_estado_abono_display }}</b>
+        <div class="success-row">
+            <span class="success-label">Estado del Abono:</span>
+            <b class="success-value-green">{{ cita.get_estado_abono_display }}</b>
         </div>
     </div>
 
@@ -47,7 +47,7 @@
         </span>
     </div>
 
-    <a href="{% url 'reserva_paso1' %}" class="btn btn-primary full" style="margin-top: 20px;">
+    <a href="{% url 'reserva_paso1' %}" class="btn btn-primary full mt-20">
         Volver al Inicio
     </a>
 </section>

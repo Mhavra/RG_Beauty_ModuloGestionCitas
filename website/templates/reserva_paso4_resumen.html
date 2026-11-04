@@ -9,10 +9,10 @@
 
     <div class="appointment-card">
         <div class="appointment-top">
-            <span style="display: flex; flex-direction: column;">
-                <small style="font-size: 9px; color: var(--muted); letter-spacing: 1px;">SERVICIO</small>
+            <span class="appointment-info">
+                <small>SERVICIO</small>
                 <strong>{{ servicio.nombre_serv }}</strong>
-                <em style="font-style: normal; font-size: 11px; color: var(--muted);">{{ servicio.duracion_minutos }} min</em>
+                <em>{{ servicio.duracion_minutos }} min</em>
             </span>
         </div>
         <div class="detail-grid">
@@ -24,7 +24,6 @@
     <div class="price-card">
         <div><span>Total servicio</span><b>${{ monto_total|floatformat:"0" }} CLP</b></div>
         <div class="deposit"><span>Abono requerido hoy ({{ porcentaje }}%)</span><b>${{ monto_abono|floatformat:"0" }} CLP</b></div>
-        <!-- Mantuve el saldo_salon que tenías en tu vista -->
         <div><span>Saldo a pagar en salón</span><b>${{ saldo_salon|floatformat:"0" }} CLP</b></div>
     </div>
 
@@ -33,7 +32,6 @@
         Completa el abono dentro de ese plazo para asegurarla.
     </div>
 
-    <!-- Corregida la comilla simple que faltaba en el url -->
     <form action="{% url 'reserva_paso5' %}" method="POST">
         {% csrf_token %}
         <input type="hidden" name="servicio_id" value="{{ servicio.id }}">
@@ -41,9 +39,9 @@
         <input type="hidden" name="fecha_hora" value="{{ fecha_hora }}">
         <input type="hidden" name="monto_abono" value="{{ monto_abono }}">
 
-        <div style="margin-bottom: 15px;">
+        <div class="payment-select-wrap">
             <label class="choice-label">Pasarela de Pago</label>
-            <select name="metodo_pago" style="width: 100%; border: 1px solid var(--line); border-radius: 11px; padding: 12px; background: white;">
+            <select name="metodo_pago" class="payment-select">
                 <option value="webpay">Webpay Plus (Débito/Crédito)</option>
                 <option value="mercadopago">Mercado Pago</option>
             </select>

@@ -16,11 +16,11 @@
         <div class="time-grid">
             {% for h in horarios %}
             <label>
-                <input type="radio" name="fecha_hora" value="{{ fecha }} {{ h }}" style="display:none;" required>
+                <input type="radio" name="fecha_hora" value="{{ fecha }} {{ h }}" class="hidden-input" required>
                 <span>{{ h }}</span>
             </label>
             {% empty %}
-            <div class="notice" style="grid-column: 1 / -1; justify-content: center;">
+            <div class="notice notice-center">
                 No hay bloques libres para este día. Intenta otra fecha.
             </div>
             {% endfor %}

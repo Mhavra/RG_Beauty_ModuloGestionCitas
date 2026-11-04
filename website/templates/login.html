@@ -2,12 +2,12 @@
 {% block title %}Iniciar Sesión - RG Beauty{% endblock %}
 
 {% block content %}
-<div style="display: flex; align-items: center; justify-content: center; min-height: 70vh;">
-    <div class="login-card" style="width: 100%;">
-        <div style="text-align: center; margin-bottom: 30px;">
+<div class="auth-wrapper">
+    <div class="login-card">
+        <div class="auth-header">
             <div class="eyebrow">BIENVENIDA DE VUELTA</div>
-            <h1 style="font-size: 32px; margin-bottom: 8px;">Iniciar Sesión</h1>
-            <p class="lead" style="margin-bottom: 0;">Ingresa a tu cuenta de RG Beauty.</p>
+            <h1>Iniciar Sesión</h1>
+            <p class="lead">Ingresa a tu cuenta de RG Beauty.</p>
         </div>
 
         <form method="POST">
@@ -29,14 +29,14 @@
                 {% endif %}
             </div>
 
-            <button type="submit" class="btn btn-primary full" style="margin-top: 10px;">
+            <button type="submit" class="btn btn-primary full btn-block">
                 Ingresar
             </button>
         </form>
 
-        <div style="text-align: center; margin-top: 25px; border-top: 1px solid var(--line); padding-top: 20px;">
-            <p class="lead" style="font-size: 12px; margin-bottom: 10px;">¿Aún no tienes cuenta?</p>
-            <a href="{% url 'registro' %}" class="btn btn-secondary full" style="text-decoration: none; display: flex;">Regístrate aquí</a>
+        <div class="auth-footer">
+            <p class="lead">¿Aún no tienes cuenta?</p>
+            <a href="{% url 'registro' %}" class="btn btn-secondary full link-btn">Regístrate aquí</a>
         </div>
     </div>
 </div>

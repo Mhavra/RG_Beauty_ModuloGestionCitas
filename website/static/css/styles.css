@@ -268,3 +268,64 @@ input:focus, select:focus, textarea:focus {
    13. FOOTER
    ========================================== */
 footer { border-top: 1px solid var(--line); text-align: center; color: var(--muted); font-size: 10px; padding: 22px; margin-top: auto; }
+/* ==========================================
+   UTILIDADES
+   ========================================== */
+.hidden-input { display: none; }
+.text-center { text-align: center; }
+.text-capitalize { text-transform: capitalize; }
+.text-small { font-size: 12px; }
+.empty-state-msg { text-align: center; padding: 40px 0; }
+.empty-state-table { padding: 20px; text-align: center; color: var(--muted); }
+.mt-20 { margin-top: 20px; }
+
+/* Header */
+.btn-sm { min-height: 38px; padding: 0 15px; font-size: 12px; border-radius: 8px; }
+.btn-logout { color: var(--danger); font-size: 12px; font-weight: 600; }
+.btn-logout:hover { background: #fff4f4; }
+
+/* Auth (Login y Registro) */
+.auth-wrapper { display: flex; align-items: center; justify-content: center; min-height: 70vh; }
+.auth-card { width: 100%; max-width: 440px; }
+.auth-header { text-align: center; margin-bottom: 30px; }
+.auth-header h1 { font-size: 32px; margin-bottom: 8px; }
+.auth-header .lead { margin-bottom: 0; }
+.btn-block { margin-top: 10px; }
+.auth-footer { text-align: center; margin-top: 25px; border-top: 1px solid var(--line); padding-top: 20px; }
+.auth-footer p { font-size: 12px; margin-bottom: 10px; }
+.link-btn { text-decoration: none; display: flex; }
+
+/* Admin Dashboard */
+.admin-container { padding: 27px 32px 50px; max-width: 1200px; margin: 0 auto; width: 100%; }
+.btn-admin-action { margin-left: 15px; }
+.report-card { margin-bottom: 25px; padding: 20px; }
+.report-title { margin-bottom: 15px; font-size: 16px; }
+.report-form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; align-items: end; }
+.form-label-sm { display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+.btn-dark-full { grid-column: 1 / -1; background: var(--ink); color: var(--white); }
+.table-responsive { overflow-x: auto; }
+.data-table { width: 100%; text-align: left; border-collapse: collapse; }
+.data-table thead { background: var(--canvas); border-bottom: 1px solid var(--line); font-size: 11px; color: var(--muted); text-transform: uppercase; }
+.data-table th, .data-table td { padding: 15px; }
+.data-table tbody { font-size: 13px; }
+.data-table tbody tr { border-bottom: 1px solid var(--line); }
+.td-bold { font-weight: bold; }
+.status-confirmed { background: #eaf7ef; color: #347b55; }
+.status-pending { background: #fbf7e9; color: #9a7620; }
+
+/* Pasos de Reserva */
+.calendar-input-full { width: 100%; border: 1px solid var(--line); border-radius: 11px; padding: 12px; }
+.notice-center { grid-column: 1 / -1; justify-content: center; display: flex; align-items: center; }
+.appointment-info { display: flex; flex-direction: column; }
+.appointment-info small { font-size: 9px; color: var(--muted); letter-spacing: 1px; }
+.appointment-info em { font-style: normal; font-size: 11px; color: var(--muted); }
+.payment-select-wrap { margin-bottom: 15px; }
+.payment-select { width: 100%; border: 1px solid var(--line); border-radius: 11px; padding: 12px; background: var(--white); }
+
+/* Éxito */
+.success-details { padding: 15px; }
+.success-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.success-row:last-child { border-bottom: none; }
+.success-label { font-size: 12px; color: var(--muted); }
+.success-value { font-size: 12px; }
+.success-value-green { font-size: 12px; color: var(--green); text-transform: uppercase; }
