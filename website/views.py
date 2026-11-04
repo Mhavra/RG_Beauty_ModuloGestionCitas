@@ -22,7 +22,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from .forms import CitaForm, EditarPerfilForm
 
 
@@ -60,24 +60,11 @@ def registro_view(request):
         form = RegistroClienteForm() 
     return render(request, 'registro.html', {'form': form}) 
 
-@login_required
-def reserva_paso1_servicios(request): 
-    servicios = Servicio.objects.all() 
-    return render(request, 'reserva_paso1_servicios.html', {'servicios': servicios}) 
-
- 
-def reserva_paso2_fecha(request, servicio_id): 
-    servicio = get_object_or_404(Servicio, pk=servicio_id) 
-    profesionales = Usuario.objects.filter(rol__in=['admin', 'profesional']) 
-    return render(request, 'reserva_paso2_fecha.html', {'servicio': servicio, 'profesionales': profesionales})
-
-def reserva_paso3_horarios(request, servicio_id, empleado_id): 
-    servicio = get_object_or_404(Servicio, pk=servicio_id) 
-    empleado = get_object_or_404(Usuario, pk=empleado_id) 
-    
-    fecha_str = request.GET.get('fecha', datetime.date.today().strftime('%Y-%m-%d')) 
-    fecha_obj = datetime.datetime.strptime(fecha_str, '%Y-%m-%d').date()
-    
+# --------------------------------------------------
+# FUNCIÓN REUTILIZABLE (para no repetir lógica)
+# --------------------------------------------------
+def calcular_horarios_disponibles(servicio, empleado, fecha_obj):
+    """Devuelve la lista de horarios libres para un empleado, servicio y fecha."""
     dias_semana = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo']
     nombre_dia = dias_semana[fecha_obj.weekday()]
     
@@ -104,17 +91,9 @@ def reserva_paso3_horarios(request, servicio_id, empleado_id):
                 estado__in=['pendiente', 'confirmada']
             )
             
-            print("\n" + "="*50)
-            print(f"DEBUG: BUSCANDO CITAS PARA EL DÍA: {fecha_obj}")
-            print(f"DEBUG: EMPLEADO SELECCIONADO: {empleado.get_full_name()} (ID: {empleado.id})")
-            
             rangos_ocupados = []
             for cita in citas_existentes:
-                # Convierte a Hora local
                 cita_inicio_local = timezone.localtime(cita.fecha_hora_cita).replace(tzinfo=None)
-                
-                print(f" -> Revisando Cita #{cita.id}: Fecha BD (local) = {cita_inicio_local}")
-                
                 if cita_inicio_local.date() == fecha_obj:
                     servicios_de_cita = cita.citaservicio_set.all()
                     if servicios_de_cita.exists():
@@ -124,15 +103,10 @@ def reserva_paso3_horarios(request, servicio_id, empleado_id):
                     
                     cita_fin_local = cita_inicio_local + datetime.timedelta(minutes=duracion_cita)
                     rangos_ocupados.append((cita_inicio_local, cita_fin_local))
-                    print(f"    [OCUPADO] Bloque añadido: {cita_inicio_local.strftime('%H:%M')} a {cita_fin_local.strftime('%H:%M')} ({duracion_cita} min)")
-                else:
-                    print(f"    [IGNORADA] No es del día seleccionado.")
             
             duracion_servicio = datetime.timedelta(minutes=servicio.duracion_minutos)
             intervalo = datetime.timedelta(minutes=30)
             hora_candidata = hora_inicio_dia
-            
-            print(f"DEBUG: El servicio a reservar dura {servicio.duracion_minutos} minutos.")
             
             while hora_candidata + duracion_servicio <= hora_fin_dia:
                 fin_candidato = hora_candidata + duracion_servicio
@@ -141,15 +115,90 @@ def reserva_paso3_horarios(request, servicio_id, empleado_id):
                 for inicio_ocupado, fin_ocupado in rangos_ocupados:
                     if hora_candidata < fin_ocupado and fin_candidato > inicio_ocupado:
                         solapa = True
-                        print(f"    [SOLAPA] Hora {hora_candidata.strftime('%H:%M')} - {fin_candidato.strftime('%H:%M')} choca con {inicio_ocupado.strftime('%H:%M')} - {fin_ocupado.strftime('%H:%M')}")
                         break
                 
                 if not solapa:
                     horarios_libres.append(hora_candidata.strftime('%H:%M'))
                 
                 hora_candidata += intervalo
-            print("="*50 + "\n")
+    
+    return horarios_libres
 
+
+# --------------------------------------------------
+# VISTA DEL PASO 3 (usa la función)
+# --------------------------------------------------
+
+
+# --------------------------------------------------
+# API PARA QUE EL PASO 2 VERIFIQUE ANTES DE AVANZAR
+# --------------------------------------------------
+@login_required
+def api_verificar_disponibilidad(request, servicio_id, empleado_id):
+    """Devuelve JSON diciendo si hay horarios disponibles o no."""
+    servicio = get_object_or_404(Servicio, pk=servicio_id)
+    empleado = get_object_or_404(Usuario, pk=empleado_id)
+    fecha_str = request.GET.get('fecha')
+    
+    if not fecha_str:
+        return JsonResponse({'disponible': False, 'count': 0, 'error': 'Fecha no proporcionada'})
+    
+    try:
+        fecha_obj = datetime.datetime.strptime(fecha_str, '%Y-%m-%d').date()
+    except ValueError:
+        return JsonResponse({'disponible': False, 'count': 0, 'error': 'Formato de fecha inválido'})
+    
+    hoy = timezone.localdate()
+    if fecha_obj <= hoy:
+        return JsonResponse({'disponible': False, 'count': 0, 'error': 'Fecha no permitida'})
+    
+    horarios = calcular_horarios_disponibles(servicio, empleado, fecha_obj)
+    return JsonResponse({'disponible': len(horarios) > 0, 'count': len(horarios)})
+
+@login_required
+def reserva_paso1_servicios(request): 
+    servicios = Servicio.objects.all() 
+    return render(request, 'reserva_paso1_servicios.html', {'servicios': servicios}) 
+
+@login_required
+def reserva_paso2_fecha(request, servicio_id): 
+    servicio = get_object_or_404(Servicio, pk=servicio_id) 
+    profesionales = Usuario.objects.filter(rol__in=['admin', 'profesional']) 
+    
+    # Calcular fecha mínima: mañana
+    hoy = timezone.localdate()
+    fecha_minima = hoy + datetime.timedelta(days=1)
+    
+    return render(request, 'reserva_paso2_fecha.html', {
+        'servicio': servicio, 
+        'profesionales': profesionales,
+        'fecha_minima': fecha_minima.strftime('%Y-%m-%d')
+    })
+
+@login_required
+def reserva_paso3_horarios(request, servicio_id, empleado_id): 
+    servicio = get_object_or_404(Servicio, pk=servicio_id) 
+    empleado = get_object_or_404(Usuario, pk=empleado_id) 
+    
+    # 1. Validar que la fecha venga en la URL
+    fecha_str = request.GET.get('fecha')
+    if not fecha_str:
+        messages.error(request, 'Debes seleccionar una fecha antes de ver los horarios.')
+        return redirect('reserva_paso2', servicio_id=servicio_id)
+    
+    # 2. Convertir la fecha a objeto date
+    fecha_obj = datetime.datetime.strptime(fecha_str, '%Y-%m-%d').date()
+    
+    # 3. Validación de seguridad: bloquear fechas pasadas o de hoy
+    hoy = timezone.localdate()
+    if fecha_obj <= hoy:
+        messages.error(request, 'Debes seleccionar una fecha a partir de mañana.')
+        return redirect('reserva_paso2', servicio_id=servicio_id)
+    
+    # 4. Calcular horarios usando la función reutilizable
+    horarios_libres = calcular_horarios_disponibles(servicio, empleado, fecha_obj)
+
+    # 5. Renderizar el template
     return render(request, 'reserva_paso3_horarios.html', {
         'servicio': servicio, 
         'empleado': empleado, 
@@ -163,6 +212,11 @@ def reserva_paso4_resumen(request):
     empleado_id = request.POST.get('empleado_id') 
     fecha_hora_str = request.POST.get('fecha_hora') 
      
+    # VALIDACIÓN: Si no hay fecha o es "None", devolver al paso 3
+    if not fecha_hora_str or fecha_hora_str == 'None':
+        messages.error(request, 'Debes seleccionar un horario válido antes de continuar.')
+        return redirect('reserva_paso3', servicio_id=servicio_id, empleado_id=empleado_id)
+
     servicio = get_object_or_404(Servicio, pk=servicio_id) 
     empleado = get_object_or_404(Usuario, pk=empleado_id) 
      
@@ -183,7 +237,6 @@ def reserva_paso4_resumen(request):
         'saldo_salon': saldo_salon, 'porcentaje': porcentaje 
     }) 
 
-
 @login_required 
 def reserva_paso5_procesar_pago(request): 
     if request.method == 'POST': 
@@ -191,11 +244,31 @@ def reserva_paso5_procesar_pago(request):
         empleado_id = request.POST.get('empleado_id') 
         fecha_hora_str = request.POST.get('fecha_hora')
         monto_abono_raw = request.POST.get('monto_abono', '0') 
-        monto_abono = Decimal(monto_abono_raw.replace(',','.'))
         metodo_pago = request.POST.get('metodo_pago', 'webpay') 
+         
+        # VALIDACIÓN: Evitar que el sistema intente procesar "None"
+        if not fecha_hora_str or fecha_hora_str == 'None':
+            messages.error(request, 'Hubo un problema con la fecha. Por favor, selecciona tu horario nuevamente.')
+            return redirect('reserva_paso3', servicio_id=servicio_id, empleado_id=empleado_id)
+
+        # Conversión segura de monto (reemplazo de coma por punto por locale es-cl)
+        monto_abono = Decimal(monto_abono_raw.replace(',', '.'))
+
+        servicio = get_object_or_404(Servicio, pk=servicio_id)
+        empleado = get_object_or_404(Usuario, pk=empleado_id)
          
         fecha_hora_naive = datetime.datetime.strptime(fecha_hora_str, '%Y-%m-%d %H:%M') 
         fecha_hora = timezone.make_aware(fecha_hora_naive, timezone.get_current_timezone())
+        fecha_obj = fecha_hora.date()
+        
+        # VALIDACIÓN EXTRA: Verificar que el horario sigue libre
+        horarios_actuales = calcular_horarios_disponibles(servicio, empleado, fecha_obj)
+        hora_solicitada = fecha_hora.strftime('%H:%M')
+        
+        if hora_solicitada not in horarios_actuales:
+            messages.error(request, 'Lo sentimos, el horario que seleccionaste ya fue reservado por otra persona. Por favor elige otro.')
+            url = reverse('reserva_paso3', kwargs={'servicio_id': servicio_id, 'empleado_id': empleado_id})
+            return redirect(f'{url}?fecha={fecha_obj.isoformat()}')
          
         try: 
             with transaction.atomic(): 
@@ -204,13 +277,26 @@ def reserva_paso5_procesar_pago(request):
                 ).exists() 
                  
                 if cita_existente: 
-                    return JsonResponse({'status': 'error', 'message': 'El horario seleccionado acaba de ser reservado.'}, status=409) 
+                    messages.error(request, 'El horario acaba de ser reservado por otra persona. Por favor elige otro.')
+                    url = reverse('reserva_paso3', kwargs={'servicio_id': servicio_id, 'empleado_id': empleado_id})
+                    return redirect(f'{url}?fecha={fecha_obj.isoformat()}')
+
+                # Recalcular monto por seguridad (evitar que el usuario lo manipule en el HTML)
+                config = ConfiguracionSistema.objects.first()
+                porcentaje = config.porcentaje_abono if config else Decimal('50.00')
+                monto_total = servicio.precio_serv
+                if config and config.permite_monto_fijo:
+                    monto_abono_calculado = config.monto_fijo_abono
+                else:
+                    monto_abono_calculado = (monto_total * (porcentaje / Decimal('100')))
+                
+                # Usamos el calculado por seguridad, o el del POST si confías en el front (mejor usar el calculado)
+                monto_abono = monto_abono_calculado
                  
                 nueva_cita = Cita.objects.create( 
                     cliente=request.user, empleado_id=empleado_id, fecha_hora_cita=fecha_hora, 
                     estado='confirmada', monto_abono=monto_abono, estado_abono='pagado' 
                 ) 
-                servicio = Servicio.objects.get(pk=servicio_id) 
                 CitaServicio.objects.create(cita=nueva_cita, servicio=servicio) 
                  
                 Pago.objects.create( 
@@ -220,15 +306,18 @@ def reserva_paso5_procesar_pago(request):
                 ) 
                  
                 despachar_notificacion_cita(nueva_cita) 
+                messages.success(request, '¡Tu reserva ha sido confirmada con éxito!')
                 return redirect('reserva_paso6_exito', cita_id=nueva_cita.id) 
                  
         except Exception as e: 
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
+            messages.error(request, f'Ocurrió un error al procesar tu pago: {str(e)}')
+            return redirect('reserva_paso1')
+@login_required
 def reserva_paso6_exito(request, cita_id): 
     cita = get_object_or_404(Cita, pk=cita_id) 
     return render(request, 'reserva_paso6_exito.html', {'cita': cita}) 
- 
+
+
 def despachar_notificacion_cita(cita): 
     intento_whatsapp_exitoso = False 
     log_evento = {'timestamp': datetime.datetime.now().isoformat(), 'canal': 'WhatsApp Business API', 'estado': 'Fallido'} 
