@@ -284,7 +284,7 @@ class Pago(models.Model):
 
     cita = models.ForeignKey(
         Cita,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='pagos',
         verbose_name="Cita Asociada"
     )
