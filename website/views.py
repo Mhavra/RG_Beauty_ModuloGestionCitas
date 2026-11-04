@@ -53,7 +53,7 @@ def registro_view(request):
         form = RegistroClienteForm() 
     return render(request, 'registro.html', {'form': form}) 
 
- 
+@login_required
 def reserva_paso1_servicios(request): 
     servicios = Servicio.objects.all() 
     return render(request, 'reserva_paso1_servicios.html', {'servicios': servicios}) 
