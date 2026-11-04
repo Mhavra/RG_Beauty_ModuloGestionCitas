@@ -128,32 +128,12 @@ def calcular_horarios_disponibles(servicio, empleado, fecha_obj):
 # --------------------------------------------------
 # VISTA DEL PASO 3 (usa la función)
 # --------------------------------------------------
-def reserva_paso3_horarios(request, servicio_id, empleado_id): 
-    servicio = get_object_or_404(Servicio, pk=servicio_id) 
-    empleado = get_object_or_404(Usuario, pk=empleado_id) 
-    
-    fecha_str = request.GET.get('fecha', (timezone.localdate() + datetime.timedelta(days=1)).strftime('%Y-%m-%d')) 
-    fecha_obj = datetime.datetime.strptime(fecha_str, '%Y-%m-%d').date()
-    
-    # VALIDACIÓN DE SEGURIDAD: bloquear fechas pasadas o de hoy
-    hoy = timezone.localdate()
-    if fecha_obj <= hoy:
-        messages.error(request, 'Debes seleccionar una fecha a partir de mañana.')
-        return redirect('reserva_paso2', servicio_id=servicio_id)
-    
-    horarios_libres = calcular_horarios_disponibles(servicio, empleado, fecha_obj)
-    
-    return render(request, 'reserva_paso3_horarios.html', {
-        'servicio': servicio, 
-        'empleado': empleado, 
-        'fecha': fecha_str, 
-        'horarios': horarios_libres
-    })
 
 
 # --------------------------------------------------
 # API PARA QUE EL PASO 2 VERIFIQUE ANTES DE AVANZAR
 # --------------------------------------------------
+@login_required
 def api_verificar_disponibilidad(request, servicio_id, empleado_id):
     """Devuelve JSON diciendo si hay horarios disponibles o no."""
     servicio = get_object_or_404(Servicio, pk=servicio_id)
@@ -180,7 +160,7 @@ def reserva_paso1_servicios(request):
     servicios = Servicio.objects.all() 
     return render(request, 'reserva_paso1_servicios.html', {'servicios': servicios}) 
 
- 
+@login_required
 def reserva_paso2_fecha(request, servicio_id): 
     servicio = get_object_or_404(Servicio, pk=servicio_id) 
     profesionales = Usuario.objects.filter(rol__in=['admin', 'profesional']) 
@@ -195,22 +175,30 @@ def reserva_paso2_fecha(request, servicio_id):
         'fecha_minima': fecha_minima.strftime('%Y-%m-%d')
     })
 
+@login_required
 def reserva_paso3_horarios(request, servicio_id, empleado_id): 
     servicio = get_object_or_404(Servicio, pk=servicio_id) 
     empleado = get_object_or_404(Usuario, pk=empleado_id) 
     
-    fecha_str = request.GET.get('fecha', (timezone.localdate() + datetime.timedelta(days=1)).strftime('%Y-%m-%d')) 
+    # 1. Validar que la fecha venga en la URL
+    fecha_str = request.GET.get('fecha')
+    if not fecha_str:
+        messages.error(request, 'Debes seleccionar una fecha antes de ver los horarios.')
+        return redirect('reserva_paso2', servicio_id=servicio_id)
+    
+    # 2. Convertir la fecha a objeto date
     fecha_obj = datetime.datetime.strptime(fecha_str, '%Y-%m-%d').date()
     
-    # Validación de seguridad: no permitir fechas pasadas ni de hoy
+    # 3. Validación de seguridad: bloquear fechas pasadas o de hoy
     hoy = timezone.localdate()
     if fecha_obj <= hoy:
         messages.error(request, 'Debes seleccionar una fecha a partir de mañana.')
         return redirect('reserva_paso2', servicio_id=servicio_id)
     
-    # Aquí está la magia: una sola línea reemplaza todo tu código de antes
+    # 4. Calcular horarios usando la función reutilizable
     horarios_libres = calcular_horarios_disponibles(servicio, empleado, fecha_obj)
 
+    # 5. Renderizar el template
     return render(request, 'reserva_paso3_horarios.html', {
         'servicio': servicio, 
         'empleado': empleado, 
@@ -324,11 +312,12 @@ def reserva_paso5_procesar_pago(request):
         except Exception as e: 
             messages.error(request, f'Ocurrió un error al procesar tu pago: {str(e)}')
             return redirect('reserva_paso1')
-        
+@login_required
 def reserva_paso6_exito(request, cita_id): 
     cita = get_object_or_404(Cita, pk=cita_id) 
     return render(request, 'reserva_paso6_exito.html', {'cita': cita}) 
- 
+
+
 def despachar_notificacion_cita(cita): 
     intento_whatsapp_exitoso = False 
     log_evento = {'timestamp': datetime.datetime.now().isoformat(), 'canal': 'WhatsApp Business API', 'estado': 'Fallido'} 
