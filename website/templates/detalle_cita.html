@@ -31,9 +31,9 @@
         <div><span>Abono pagado</span><b>${{ cita.monto_abono|floatformat:"0" }} CLP</b></div>
     </div>
 
-    <div style="display:flex; gap:8px; margin-top:20px; flex-wrap:wrap;">
+    <div class="form-actions">
         <a href="{% url 'editar_cita' cita.pk %}" class="btn btn-primary">Editar cita</a>
-        <a href="{% url 'eliminar_cita' cita.pk %}" class="btn btn-secondary" style="color:#b95151;">Eliminar cita</a>
+        <a href="{% url 'eliminar_cita' cita.pk %}" class="btn btn-secondary text-danger">Eliminar cita</a>
         <a href="{% url 'mis_citas' %}" class="btn btn-ghost">← Volver a Mis Citas</a>
     </div>
 </section>

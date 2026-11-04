@@ -2,30 +2,35 @@
 {% block title %}Editar Perfil - RG Beauty Spa{% endblock %}
 
 {% block content %}
-<section class="step-panel">
-    <div class="eyebrow">EDITAR DATOS</div>
-    <h1>Editar Perfil</h1>
-    <p class="lead">Actualiza tu información personal.</p>
-
-    <form method="post" style="background:#fff; padding:24px; border-radius:16px; border:1px solid #ebe7e8;">
-        {% csrf_token %}
-
-        {% for field in form %}
-        <div class="form-group" style="margin-bottom:16px;">
-            <label style="font-weight:600; font-size:13px; display:block; margin-bottom:6px;">{{ field.label }}:</label>
-            {{ field }}
-            {% if field.errors %}<span class="error-text" style="color:#b95151; font-size:12px;">{{ field.errors.0 }}</span>{% endif %}
+<div class="auth-wrapper">
+    <div class="login-card auth-card">
+        <div class="auth-header">
+            <div class="eyebrow">EDITAR DATOS</div>
+            <h1>Editar Perfil</h1>
+            <p class="lead">Actualiza tu información personal.</p>
         </div>
-        {% endfor %}
 
-        {% if form.non_field_errors %}
-            <div class="error-text" style="color:#b95151; font-size:12px;">{{ form.non_field_errors.0 }}</div>
-        {% endif %}
+        <form method="POST">
+            {% csrf_token %}
 
-        <div style="display:flex; gap:8px; margin-top:20px;">
-            <button type="submit" class="btn btn-primary">Guardar cambios</button>
-            <a href="{% url 'cuenta' %}" class="btn btn-ghost">Cancelar</a>
-        </div>
-    </form>
-</section>
+            {% for field in form %}
+            <div class="form-group">
+                <label>{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<span class="error-text">{{ field.errors.0 }}</span>{% endif %}
+            </div>
+            {% endfor %}
+
+            {% if form.non_field_errors %}
+                <div class="error-text">{{ form.non_field_errors.0 }}</div>
+            {% endif %}
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                
+                <a href="{% url 'cuenta' %}" class="btn btn-ghost">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
