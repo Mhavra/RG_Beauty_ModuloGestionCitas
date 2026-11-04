@@ -535,3 +535,85 @@ footer { border-top: 1px solid var(--line); text-align: center; color: var(--mut
   padding: 8px 12px;
   color: var(--muted);
 }
+
+/* ==========================================
+   17. AVISOS Y ALERTAS (Editar y Cancelar Cita)
+   ========================================== */
+.notice-warning {
+  background: var(--rose-wash);
+  border: 1px solid var(--rose);
+  color: var(--danger);
+  margin-bottom: 20px;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.notice-warning strong {
+  font-weight: 700;
+}
+
+.text-left {
+  text-align: left;
+}
+
+/* ==========================================
+   18. CAMPOS DE SOLO LECTURA (Editar Cita)
+   ========================================== */
+.read-only-field {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--canvas);
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
+.read-only-label {
+  font-weight: 600;
+  font-size: 12px;
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.read-only-value {
+  font-size: 15px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* ==========================================
+   19. ACCIONES ESPECÍFICAS (Editar Cita)
+   ========================================== */
+.form-actions-spaced {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.flex-grow-right {
+  flex-grow: 1;
+  text-align: right;
+}
+
+.btn-outline-danger {
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  padding: 10px 16px;
+  background: transparent;
+}
+
+.btn-outline-danger:hover {
+  background: var(--rose-wash);
+}
+
+.btn-confirm-delete {
+  background: var(--danger);
+  color: var(--white);
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 700;
+}
