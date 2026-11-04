@@ -2,12 +2,12 @@
 {% block title %}Cancelar Cita #{{ cita.id }} - RG Beauty Spa{% endblock %}
 
 {% block content %}
-<section class="step-panel text-center">
-    <div class="eyebrow">CONFIRMAR CANCELACIÓN</div>
+<section class="step-panel" style="text-align:center;">
+    <div class="eyebrow">CANCELAR RESERVA</div>
     <h1>¿Cancelar esta cita?</h1>
+    
     <p class="lead">
-        Vas a cancelar la <strong>Cita #{{ cita.id }}</strong> del {{ cita.fecha_hora_cita|date:"d/m/Y H:i" }} hrs.
-        Esta acción no se puede deshacer.
+        Estás a punto de cancelar la <strong>Cita #{{ cita.id }}</strong> programada para el {{ cita.fecha_hora_cita|date:"d/m/Y H:i" }} hrs.
     </p>
     
     <div class="notice" style="background: #fff4f4; border-color: #f4c2c2; color: #b95151; margin-bottom: 20px; padding: 12px; border-radius: 8px; font-size: 13px; text-align: left;">
@@ -16,9 +16,9 @@
 
     <form method="POST" class="mt-24">
         {% csrf_token %}
-        <div class="flex-center-gap">
-            <button type="submit" class="btn btn-danger">
-                Sí, eliminar
+        <div style="display:flex; gap:12px; justify-content:center;">
+            <button type="submit" class="btn" style="background:#b95151; color:#fff; padding:12px 24px; border-radius:12px; font-weight:700;">
+                Sí, cancelar mi cita
             </button>
             <a href="{% url 'detalle_cita' cita.pk %}" class="btn btn-ghost">No cancelar, volver</a>
         </div>

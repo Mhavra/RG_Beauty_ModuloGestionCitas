@@ -2,35 +2,60 @@
 {% block title %}Editar Cita #{{ cita.id }} - RG Beauty Spa{% endblock %}
 
 {% block content %}
-<div class="auth-wrapper">
-    <div class="login-card auth-card">
-        <div class="auth-header">
-            <div class="eyebrow">EDITAR RESERVA</div>
-            <h1>Editar Cita #{{ cita.id }}</h1>
-            <p class="lead">Puedes modificar cualquier dato de tu reserva</p>
+<section class="step-panel">
+    <div class="eyebrow">EDITAR RESERVA</div>
+    <h1>Editar Cita #{{ cita.id }}</h1>
+    <p class="lead">Puedes modificar los datos de tu reserva.</p>
+
+    <div class="notice" style="background: #fff4f4; border-color: #f4c2c2; color: #b95151; margin-bottom: 20px; padding: 12px; border-radius: 8px; font-size: 13px;">
+        <strong>Importante:</strong> Si decides cancelar tu cita, el abono pagado <strong>no será reembolsado</strong> automáticamente. Para casos especiales, contacta a la administradora.
+    </div>
+
+    <form method="post" style="background:#fff; padding:24px; border-radius:16px; border:1px solid #ebe7e8;">
+        {% csrf_token %}
+
+        <!-- Mostramos el estado actual  -->
+        <div class="form-group" style="margin-bottom:16px; padding:12px; background:#f8f9fa; border-radius:8px; border:1px solid #ebe7e8;">
+            <label style="font-weight:600; font-size:12px; display:block; margin-bottom:4px; color:#716c70; text-transform:uppercase;">Estado actual de la cita</label>
+            <strong style="font-size:15px; color:#222;">{{ cita.get_estado_display }}</strong>
         </div>
+
+        {% for field in form %}
+            <!-- Campos de dinero (Solo lectura) -->
+            {% if field.name == 'monto_abono' or field.name == 'estado_abono' %}
+                <div class="form-group" style="margin-bottom:16px; padding:12px; background:#f8f9fa; border-radius:8px; border:1px solid #ebe7e8;">
+                    <label style="font-weight:600; font-size:12px; display:block; margin-bottom:4px; color:#716c70; text-transform:uppercase;">{{ field.label }} </label>
+                    <strong style="font-size:15px; color:#222;">{{ field.value|default:"No definido" }}</strong>
+                    <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+                </div>
+            {% else %}
+                <!-- Campos editables (fecha, profesional, servicios) -->
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label style="font-weight:600; font-size:13px; display:block; margin-bottom:6px;">{{ field.label }}:</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small style="color:#b95151; font-size:12px; display:block; margin-top:6px;">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% if field.errors %}
+                        <span class="error-text" style="color:#b95151; font-size:12px;">{{ field.errors.0 }}</span>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% endfor %}
 
         <form method="POST">
             {% csrf_token %}
 
-            {% for field in form %}
-            <div class="form-group">
-                <label>{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}<span class="help-text">{{ field.help_text}}</span>{% endif %}
-                {% if field.errors %}<span class="error-text">{{ field.errors.0 }}</span>{% endif %}
+        <div style="display:flex; gap:8px; margin-top:20px; align-items:center; flex-wrap:wrap;">
+            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            <a href="{% url 'detalle_cita' cita.pk %}" class="btn btn-ghost">Volver al detalle</a>
+            
+            <div style="flex-grow:1; text-align:right;">
+                <a href="{% url 'eliminar_cita' cita.pk %}" class="btn" style="color:#b95151; border:1px solid #b95151; padding:10px 16px;">
+                    Cancelar Cita
+                </a>
             </div>
-            {% endfor %}
-
-            {% if form.non_field_errors %}
-                <div class="error-text">{{ form.non_field_errors.0 }}</div>
-            {% endif %}
-
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Guardar cambios</button>
-                <a href="{% url 'detalle_cita' cita.pk %}" class="btn btn-ghost">Cancelar</a>
-            </div>
-        </form>
-    </div>
-</div>
+        </div>
+    </form>
+</section>
 {% endblock %}

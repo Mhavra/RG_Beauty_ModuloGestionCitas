@@ -10,7 +10,7 @@
             <h1>Panel de administración</h1>
         </div>
         <div class="admin-actions">
-            <span class="status-badge">Abono Activo: {{ config.porcentaje_abono }}%</span>
+            <span class="status-badge">Abono Activo: {{ config.porcentaje_abono|default:"50" }}%</span>
             <a href="{% url 'reserva_paso1' %}" class="btn btn-secondary btn-admin-action">Ver reserva web</a>
         </div>
     </header>
@@ -39,7 +39,15 @@
     <div class="stat-row">
         <div class="stat-card">
             <span class="stat-icon rose">📅</span>
-            <span><small>CITAS REGISTRADAS</small><strong>{{ citas.count }}</strong><em>En el sistema</em></span>
+            <span><small>CITAS TOTALES</small><strong>{{ total_citas }}</strong><em>En el sistema</em></span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon green">✅</span>
+            <span><small>CONFIRMADAS</small><strong>{{ citas_confirmadas }}</strong><em>Activas</em></span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon rose">❌</span>
+            <span><small>CANCELADAS</small><strong>{{ citas_canceladas }}</strong><em>Liberadas</em></span>
         </div>
     </div>
 
@@ -57,13 +65,14 @@
                         <th>Fecha/Hora</th>
                         <th>Abono</th>
                         <th>Estado</th>
+                        <th>Acciones (Cambiar Estado)</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for c in citas %}
                     <tr>
                         <td class="td-bold">#{{ c.id }}</td>
-                        <td>{{ c.cliente.get_full_name }}</td>
+                        <td>{{ c.cliente.get_full_name|default:c.cliente.username }}</td>
                         <td>{{ c.empleado.first_name }}</td>
                         <td>{{ c.fecha_hora_cita|date:"d/m/Y H:i" }}</td>
                         <td>${{ c.monto_abono|floatformat:"0" }}</td>
@@ -72,10 +81,25 @@
                                 {{ c.get_estado_display }}
                             </span>
                         </td>
+                        <td>
+                            <!-- Formulario POST para cambiar el estado de forma segura -->
+                            <form method="POST" action="{% url 'admin_cambiar_estado' c.pk %}" style="display:flex; gap:4px;">
+                                {% csrf_token %}
+                                {% if c.estado != 'completada' %}
+                                    <button type="submit" name="estado" value="completada" class="btn btn-sm" style="background:#edf8f2; color:#2d6a4f; border:1px solid #a6d8bd;" title="Marcar como Completada">✔️</button>
+                                {% endif %}
+                                {% if c.estado != 'cancelada' %}
+                                    <button type="submit" name="estado" value="cancelada" class="btn btn-sm" style="background:#fff1f1; color:#8a2c2c; border:1px solid #f3cdcd;" title="Cancelar Cita">✖️</button>
+                                {% endif %}
+                                {% if c.estado != 'no_asistio' %}
+                                    <button type="submit" name="estado" value="no_asistio" class="btn btn-sm" style="background:#f8f9fa; color:#716c70; border:1px solid #ebe7e8;" title="No Asistió">🚫</button>
+                                {% endif %}
+                            </form>
+                        </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="empty-state-table">No hay citas registradas aún.</td>
+                        <td colspan="7" class="empty-state-table">No hay citas registradas aún.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
