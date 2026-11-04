@@ -251,7 +251,6 @@ def despachar_notificacion_cita(cita):
     cita.save() 
  
 @login_required 
-@login_required 
 def admin_dashboard(request): 
     if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']): 
         return redirect('reserva_paso1') 
@@ -326,8 +325,14 @@ def detalle_cita(request, pk):
 @login_required
 def editar_cita(request, pk):
     cita = get_object_or_404(Cita, pk=pk)
+    
     if cita.cliente != request.user:
         raise PermissionDenied('Solo puedes editar tus propias citas.')
+
+    # Si la cita ya está en un estado final, no se puede editar
+    if cita.estado in ['cancelada', 'no_asistio', 'completada']:
+        messages.error(request, 'No puedes modificar una cita que ya fue cancelada, completada o marcada como inasistencia.')
+        return redirect('detalle_cita', pk=cita.pk)
 
     if request.method == 'POST':
         form = CitaForm(request.POST, instance=cita)
@@ -342,20 +347,20 @@ def editar_cita(request, pk):
 
     return render(request, 'editar_cita.html', {'form': form, 'cita': cita})
 
-
 @login_required
 def eliminar_cita(request, pk):
     cita = get_object_or_404(Cita, pk=pk)
+    
     if cita.cliente != request.user:
-        raise PermissionDenied('Solo puedes eliminar tus propias citas.')
+        raise PermissionDenied('Solo puedes cancelar tus propias citas.')
 
     if request.method == 'POST':
-        cita.delete()
-        messages.success(request, f'Cita #{pk} eliminada correctamente.')
+        cita.estado = 'cancelada'
+        cita.save()
+        messages.success(request, f'Cita #{pk} cancelada correctamente.')
         return redirect('mis_citas')
 
     return render(request, 'confirmar_eliminar_cita.html', {'cita': cita})
-
 
 # Mi cuenta (perfil, edición, cambio de contraseña)
 

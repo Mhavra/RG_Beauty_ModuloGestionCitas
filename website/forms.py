@@ -1,4 +1,6 @@
 from django import forms
+import datetime
+from django.utils import timezone
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from .models import Cita, ConfiguracionSistema, Usuario, Servicio, CitaServicio
 
@@ -72,10 +74,11 @@ class FiltroReporteForm(forms.Form):
 #agregado para que el cliente pueda editar su cita
 
 class CitaForm(forms.ModelForm):
-    """Formulario para que el cliente edite TODOS los datos de su cita."""
+    """Formulario para que el cliente edite su cita con reglas de negocio."""
     class Meta:
         model = Cita
-        fields = ['empleado', 'servicios', 'fecha_hora_cita', 'estado', 'monto_abono', 'estado_abono']
+        # ELIMINAMOS 'estado' de aquí
+        fields = ['empleado', 'servicios', 'fecha_hora_cita', 'monto_abono', 'estado_abono']
         widgets = {
             'empleado': forms.Select(attrs={'class': 'form-input'}),
             'servicios': forms.CheckboxSelectMultiple(),
@@ -83,42 +86,51 @@ class CitaForm(forms.ModelForm):
                 attrs={'type': 'datetime-local', 'class': 'form-input'},
                 format='%Y-%m-%dT%H:%M'
             ),
-            'estado': forms.Select(attrs={'class': 'form-input'}),
-            'monto_abono': forms.NumberInput(attrs={'class': 'form-input', 'step': '0.01', 'min': '0'}),
+            'monto_abono': forms.NumberInput(attrs={'class': 'form-input'}),
             'estado_abono': forms.Select(attrs={'class': 'form-input'}),
         }
         labels = {
             'empleado': 'Profesional',
             'servicios': 'Servicios',
             'fecha_hora_cita': 'Fecha y hora',
-            'estado': 'Estado de la cita',
             'monto_abono': 'Monto del abono (CLP)',
             'estado_abono': 'Estado del abono',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
         self.fields['empleado'].queryset = Usuario.objects.filter(
             rol__in=['admin', 'profesional', 'estilista']
         ).order_by('first_name')
         self.fields['servicios'].queryset = Servicio.objects.all().order_by('nombre_serv')
-        # Convertir la fecha a hora local para que el input datetime-local la muestre bien
-        if self.instance and self.instance.pk and 'fecha_hora_cita' in self.initial:
-            from django.utils import timezone
-            dt = self.initial['fecha_hora_cita']
-            if timezone.is_aware(dt):
-                self.initial['fecha_hora_cita'] = timezone.localtime(dt)
+
+        self.fields['monto_abono'].disabled = True
+        self.fields['estado_abono'].disabled = True
+
+        # (El resto de tu lógica de 1 día de anticipación se mantiene igual)
+        if self.instance and self.instance.pk:
+            ahora = timezone.now()
+            if self.instance.fecha_hora_cita <= ahora + datetime.timedelta(days=1):
+                self.fields['fecha_hora_cita'].disabled = True
+                self.fields['empleado'].disabled = True
+                self.fields['servicios'].disabled = True
+                self.fields['fecha_hora_cita'].help_text = "⚠️ No puedes modificar la fecha, profesional o servicios con menos de 1 día de anticipación."
+
+            if 'fecha_hora_cita' in self.initial:
+                dt = self.initial['fecha_hora_cita']
+                if timezone.is_aware(dt):
+                    self.initial['fecha_hora_cita'] = timezone.localtime(dt)
 
     def save(self, commit=True):
         cita = super().save(commit=False)
         if commit:
             cita.save()
-            # Manejar M2M a través de la tabla intermedia manualmente
-            CitaServicio.objects.filter(cita=cita).delete()
-            for servicio in self.cleaned_data.get('servicios', []):
-                CitaServicio.objects.create(cita=cita, servicio=servicio)
+            if not self.fields['servicios'].disabled:
+                CitaServicio.objects.filter(cita=cita).delete()
+                for servicio in self.cleaned_data.get('servicios', []):
+                    CitaServicio.objects.create(cita=cita, servicio=servicio)
         return cita
-
 
 class EditarPerfilForm(forms.ModelForm):
     """Formulario para editar los datos del perfil. NO incluye rol."""
