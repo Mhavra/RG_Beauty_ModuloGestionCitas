@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Mi Cuenta - RG Beauty{% endblock %}
+{% block content %}
+<div class="space-y-4">
+    <h2 class="text-2xl font-serif font-bold">Mi Cuenta</h2>
+
+    <div class="bg-white p-5 rounded-xl border space-y-2 text-sm">
+        <p><span class="text-xs text-gray-500 uppercase">Usuario</span><br>{{ user.username }}</p>
+        <p><span class="text-xs text-gray-500 uppercase">Nombre</span><br>{{ user.get_full_name|default:"—" }}</p>
+        <p><span class="text-xs text-gray-500 uppercase">Correo</span><br>{{ user.email }}</p>
+        <p><span class="text-xs text-gray-500 uppercase">Teléfono</span><br>{{ user.telefono }}</p>
+        <p><span class="text-xs text-gray-500 uppercase">Rol</span><br>{{ user.get_rol_display }}</p>
+        <p><span class="text-xs text-gray-500 uppercase">Citas registradas</span><br>{{ total_citas }}</p>
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+        <a href="{% url 'editar_perfil' %}" class="bg-gray-800 text-white px-4 py-2 rounded-lg text-xs">Editar perfil</a>
+        <a href="{% url 'cambiar_password' %}" class="bg-pasteldink text-gray-900 font-bold px-4 py-2 rounded-lg text-xs">Cambiar contraseña</a>
+        <a href="{% url 'mis_citas' %}" class="text-xs px-4 py-2 text-gray-600 hover:underline">Mis citas</a>
+    </div>
+</div>
+{% endblock %}

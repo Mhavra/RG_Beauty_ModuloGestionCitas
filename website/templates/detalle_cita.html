@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Detalle Cita #{{ cita.id }} - RG Beauty{% endblock %}
+{% block content %}
+<div class="space-y-4">
+    <h2 class="text-2xl font-serif font-bold">Cita #{{ cita.id }}</h2>
+
+    <div class="bg-white p-5 rounded-xl border space-y-3 text-sm">
+        <div><span class="text-xs text-gray-500 uppercase">Cliente</span><br>{{ cita.cliente.get_full_name|default:cita.cliente.username }}</div>
+        <div><span class="text-xs text-gray-500 uppercase">Profesional</span><br>{{ cita.empleado.get_full_name|default:cita.empleado.username }}</div>
+        <div><span class="text-xs text-gray-500 uppercase">Fecha y hora</span><br>{{ cita.fecha_hora_cita|date:"d/m/Y H:i" }}</div>
+        <div>
+            <span class="text-xs text-gray-500 uppercase">Servicios</span>
+            <ul class="list-disc pl-5 mt-1">
+                {% for s in cita.servicios.all %}
+                    <li>{{ s.nombre_serv }} — ${{ s.precio_serv|floatformat:0 }} ({{ s.duracion_minutos }} min)</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div>
+            <span class="text-xs text-gray-500 uppercase">Estado</span><br>
+            <span class="inline-block mt-1 px-2 py-0.5 rounded text-xs font-semibold bg-gray-100">{{ cita.get_estado_display }}</span>
+        </div>
+        <div><span class="text-xs text-gray-500 uppercase">Abono</span><br>${{ cita.monto_abono|floatformat:0 }} ({{ cita.get_estado_abono_display }})</div>
+    </div>
+
+    <div class="flex gap-2">
+        <a href="{% url 'editar_cita' cita.pk %}" class="bg-gray-800 text-white px-4 py-2 rounded-lg text-xs">Editar</a>
+        <a href="{% url 'eliminar_cita' cita.pk %}" class="bg-red-50 text-red-700 border border-red-200 px-4 py-2 rounded-lg text-xs">Eliminar</a>
+        <a href="{% url 'mis_citas' %}" class="text-xs px-4 py-2 text-gray-600 hover:underline">Volver</a>
+    </div>
+</div>
+{% endblock %}

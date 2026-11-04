@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Seleccionar Servicio - RG Beauty {% endblock %}
+{% block title %}Seleccionar Servicio - RG Beauty{% endblock %}
 {% block content %}
 
 <h2 class="text-2xl font-serif text-center font-bold mb-1">¿Cómo quieres sentirte hoy?</h2>
@@ -7,13 +7,27 @@
 
 <div class="space-y-3">
     {% for s in servicios %}
-    <div class="bg-white p-4 rounded-xl border flex justify-between items-center hover:border-pink-300 transition">
-        <h3 class="font-bold text-base text-gray-900">{{ s.nombre_serv }}</h3>
-        <p class="text-xs text-gray-500"> {{ s.duracion_minutos }} </p>
-        <div class="text-right">
-            <span class="block font-bold text-gray-900">${{ s.precio_serv|floatformat:0 }} CLP</span>
-            <a href="{% url 'reserva_paso2' s.id %}" class="inline-block mt-1 bg-pasteldink text-gray-900 font-semibold px-3 py-1.5 rounded-lg text-xs">
-                Reservar &rarr;
+    <div class="service-card">
+        {% if s.imagen %}
+            <img src="{{ s.imagen.url }}" alt="{{ s.nombre_serv }}" class="service-card__img">
+        {% else %}
+            <div class="service-card__img">Sin imagen</div>
+        {% endif %}
+
+        <div class="service-card__body">
+            {% if s.categoria %}
+                <span class="service-card__tag">{{ s.categoria.nombre }}</span>
+            {% endif %}
+            <p class="service-card__title">{{ s.nombre_serv }}</p>
+            <p class="service-card__meta">⏱ {{ s.duracion_minutos }} min</p>
+        </div>
+
+        <div class="service-card__price">
+            <small>Desde</small>
+            <strong>${{ s.precio_serv|floatformat:0 }}</strong>
+            <a href="{% url 'reserva_paso2' s.id %}"
+               class="inline-block mt-1 bg-pasteldink text-gray-900 font-semibold px-3 py-1.5 rounded-lg text-xs">
+                Reservar →
             </a>
         </div>
     </div>

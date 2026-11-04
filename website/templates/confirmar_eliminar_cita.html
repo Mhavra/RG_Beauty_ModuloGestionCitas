@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Eliminar Cita #{{ cita.id }} - RG Beauty{% endblock %}
+{% block content %}
+<div class="bg-white p-6 rounded-xl border max-w-md mx-auto text-center space-y-4">
+    <h2 class="text-xl font-serif font-bold text-red-700">¿Eliminar esta cita?</h2>
+    <p class="text-sm text-gray-600">
+        Vas a eliminar la <strong>Cita #{{ cita.id }}</strong> del {{ cita.fecha_hora_cita|date:"d/m/Y H:i" }}.
+        Esta acción no se puede deshacer.
+    </p>
+    <form method="post" class="flex justify-center gap-3">
+        {% csrf_token %}
+        <button type="submit" class="bg-red-600 text-white font-bold px-5 py-2 rounded-lg text-sm hover:bg-red-700">
+            Sí, eliminar
+        </button>
+        <a href="{% url 'detalle_cita' cita.pk %}" class="text-xs px-4 py-2 text-gray-600 hover:underline">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,35 +1,47 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}RG Beauty Spa {% endblock %}</title>
+    <title>{% block title %}RG Beauty Spa{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .bg-pasteldink { background-color: #F4C2C2; }
-        .text-pastelink { color: #D47A7A; }
-    </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
-    <nav class="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center">
-        <a href="{% url 'reserva_paso1' %}" class="text-2xl font-serif font-bold text-pastelink"> RG Beauty SPA</a>
-        <div class="flex items-center space-x-3">
+    <nav class="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center flex-wrap gap-2">
+        <a href="{% url 'reserva_paso1' %}" class="text-2xl font-serif font-bold text-pastelink">RG Beauty SPA</a>
+        <div class="flex items-center space-x-3 flex-wrap gap-y-1">
             {% if user.is_authenticated %}
-                <span class="text-xs font-medium text-gray-600"> Hola, {{ user.first_name }}</span>
-                {% if user.rol in 'admin, profesional' %}
+                <span class="text-xs font-medium text-gray-600">Hola, {{ user.first_name|default:user.username }}</span>
+                <a href="{% url 'mis_citas' %}" class="text-xs text-gray-700 hover:underline">Mis citas</a>
+                <a href="{% url 'cuenta' %}" class="text-xs text-gray-700 hover:underline">Mi cuenta</a>
+                {% if user.rol == 'admin' or user.rol == 'profesional' or user.rol == 'estilista' %}
                     <a href="{% url 'admin_dashboard' %}" class="bg-gray-800 text-white px-3 py-1 rounded text-xs">Panel Admin</a>
                 {% endif %}
-                <a href="{% url 'logout' %}" class="text-xs text-red-500 hover:underline">Salir</a>
+                <form method="post" action="{% url 'logout' %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="text-xs text-red-500 hover:underline">Salir</button>
+                </form>
             {% else %}
-                <a href="{% url 'login' %}" class="text-xs font-semibold bg-pasteldink text-gray-900 px-3 py-1.5 rounded-lg hover:opacity-90">Registrarse</a>
+                <a href="{% url 'login' %}" class="text-xs font-semibold text-gray-700 hover:underline">Iniciar sesión</a>
+                <a href="{% url 'registro' %}" class="text-xs font-semibold bg-pasteldink text-gray-900 px-3 py-1.5 rounded-lg hover:opacity-90">Registrarse</a>
             {% endif %}
-         </div>
+        </div>
     </nav>
 
-    <main class="flex.grow container mx-auto px-4 py-8 max-w-2xl">
+    {% if messages %}
+    <ul class="messages max-w-2xl mx-auto mt-4 px-4 w-full">
+        {% for message in messages %}
+            <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-2xl w-full">
         {% block content %}{% endblock %}
     </main>
-    
+
     <footer class="bg-white border-t text-center py-4 text-xs text-gray-400">
         &copy; 2026 RG Beauty Spa - Copiapó, Chile.
     </footer>

@@ -1,59 +1,56 @@
-{% extends 'base html' %}
-{% block title %}Paso 2: Especialista y Fecha - RG Beauty Spa {% endblock %}
+{% extends 'base.html' %}
+{% block title %}Paso 2: Especialista y Fecha - RG Beauty Spa{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
-    <!-- Encabezado de Paso-->
     <div class="text-center">
         <span class="text-xs font-bold tracking-widest text-pastelink uppercase">Paso 2 de 5</span>
         <h2 class="text-2xl font-serif font-bold text-gray-900 mt-1">Elige Especialista y Fecha</h2>
-        <p class="text-xs text-gray-500 mt-1">Servicio: <strong class="text-gray-800">{{ servicio.nombree_serv }}</strong>({{ servicio.duracion_minutos }} min)</p>
+        <p class="text-xs text-gray-500 mt-1">
+            Servicio: <strong class="text-gray-800">{{ servicio.nombre_serv }}</strong> ({{ servicio.duracion_minutos }} min)
+        </p>
     </div>
-    
-    <form method="GET" action="" id="formPaso2" class="space-y-5">
-        <!-- Selección de Profesional -->
+
+    <form id="formPaso2" class="space-y-5">
         <div>
             <label class="block text-xs font-bold text-gray-700 mb-2 uppercase">Selecciona Profesional:</label>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {% for prof in profesionales %}
                 <label class="relative bg-white border border-gray-200 rounded-2xl p-4 flex items-center space-x-3 cursor-pointer hover:border-pink-300 transition">
-                    <input type="radio" name="profesional_id" value="{{ prof.id }}" class="text-pink-500 focus:ring-pink-400" {% if forloop.first %}checked{% endif %} onchange="actualizarAccion({{ prof.id }})">
+                    <input type="radio" name="profesional_id" value="{{ prof.id }}"
+                           class="text-pink-500 focus:ring-pink-400"
+                           {% if forloop.first %}checked{% endif %}>
                     <div>
-                        <p class="text-sm  font-bold text-gray-900">{{% prof.get_full_name|defautl:prof.username %}}</p>
-                        <p class="text-xs text-gray-500 capitalize">{{ prof.rol }}</p>
+                        <p class="text-sm font-bold text-gray-900">{{ prof.get_full_name|default:prof.username }}</p>
+                        <p class="text-xs text-gray-500 capitalize">{{ prof.get_rol_display }}</p>
                     </div>
                 </label>
                 {% endfor %}
             </div>
         </div>
 
-        <!-- Selección de fecha -->
-        
         <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
             <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase">Fecha de Cita:</label>
-            <input type="date" id="fechaCita" name="fecha" value="{{ hoy|default:'' }}" class="w-full border rounded-xl p-2.5 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-200" required>
+            <input type="date" id="fechaCita" name="fecha" value="{{ hoy }}"
+                   class="w-full border rounded-xl p-2.5 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-200"
+                   required>
         </div>
 
-        <!-- Boton de continuar -->
-        <button type="button" onclick="irAPaso3()" class="w-full bg-pasteldink text-gray-900 font-bold py-3 rounded-2xl text-sm shadow hover:opacity-90 transition">
-            Ver Horarios Libres &rarr;
+        <button type="button" onclick="irAPaso3()"
+                class="w-full bg-pasteldink text-gray-900 font-bold py-3 rounded-2xl text-sm shadow hover:opacity-90 transition">
+            Ver Horarios Libres →
         </button>
     </form>
 </div>
 
 <script>
-    let servicioId = {{ servicio.id }};
-    let profSeleccionado = document.querySelector('input[name="profeisonal_id"]:checked')?.value || 1;
-    function actualizarAccion(profId) {
-        profSeleccionado = profId;
-    }
+    const servicioId = Number("{{ servicio.id }}");
     function irAPaso3() {
+        const profInput = document.querySelector('input[name="profesional_id"]:checked');
         const fecha = document.getElementById('fechaCita').value;
-        if (!fecha) {
-            alelrt('Por favor selecciona una fecha');
-            return;
-        }
-        window.location.href = '/reserva/paso3/${servicioId}/${profSeleccionado}/?fecha=${fecha}';
+        if (!profInput) { alert('Selecciona un profesional.'); return; }
+        if (!fecha)     { alert('Selecciona una fecha.'); return; }
+        window.location.href = `/reserva/paso3/${servicioId}/${profInput.value}/?fecha=${fecha}`;
     }
 </script>
 {% endblock %}
