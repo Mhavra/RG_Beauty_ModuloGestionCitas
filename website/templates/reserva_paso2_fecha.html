@@ -27,7 +27,8 @@
             <div class="calendar-head">
                 <strong>Selecciona la fecha</strong>
             </div>
-            <input type="date" id="fechaCita" name="fecha" value="{{ hoy|default:'' }}" class="calendar-input-full" required>
+            <!-- Aquí agregamos el min para bloquear fechas pasadas -->
+            <input type="date" id="fechaCita" name="fecha" value="" min="{{ fecha_minima }}" class="calendar-input-full" required>
         </div>
 
         <button type="button" onclick="irAPaso3()" class="btn btn-primary full">
@@ -36,6 +37,7 @@
     </form>
 </section>
 
+<!-- AQUÍ ESTÁ EL JAVASCRIPT -->
 <script>
     let servicioId = {{ servicio.id }};
     let profSeleccionado = document.querySelector('input[name="profesional_id"]:checked')?.value || "{{ profesionales.0.id }}";
@@ -43,12 +45,23 @@
     function actualizarAccion(profId) {
         profSeleccionado = profId;
     }
+    
     function irAPaso3() {
-        const fecha = document.getElementById('fechaCita').value;
+        const input = document.getElementById('fechaCita');
+        const fecha = input.value;
+        const fechaMinima = input.min;
+        
         if (!fecha) {
             alert('Por favor selecciona una fecha');
             return;
         }
+        
+        // Validación extra en JS: si intentan enviar una fecha anterior a mañana, se bloquea
+        if (fecha < fechaMinima) {
+            alert('Debes seleccionar una fecha a partir de mañana. No se permiten fechas pasadas ni el día de hoy.');
+            return;
+        }
+        
         window.location.href = `/reserva/paso3/${servicioId}/${profSeleccionado}/?fecha=${fecha}`;
     }
 </script>

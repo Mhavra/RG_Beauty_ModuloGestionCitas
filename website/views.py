@@ -69,7 +69,16 @@ def reserva_paso1_servicios(request):
 def reserva_paso2_fecha(request, servicio_id): 
     servicio = get_object_or_404(Servicio, pk=servicio_id) 
     profesionales = Usuario.objects.filter(rol__in=['admin', 'profesional']) 
-    return render(request, 'reserva_paso2_fecha.html', {'servicio': servicio, 'profesionales': profesionales})
+    
+    # Calcular fecha mínima: mañana
+    hoy = timezone.localdate()
+    fecha_minima = hoy + datetime.timedelta(days=1)
+    
+    return render(request, 'reserva_paso2_fecha.html', {
+        'servicio': servicio, 
+        'profesionales': profesionales,
+        'fecha_minima': fecha_minima.strftime('%Y-%m-%d')
+    })
 
 def reserva_paso3_horarios(request, servicio_id, empleado_id): 
     servicio = get_object_or_404(Servicio, pk=servicio_id) 
