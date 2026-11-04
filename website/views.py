@@ -1,4 +1,6 @@
 import datetime
+from decimal import Decimal, InvalidOperation
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
@@ -14,6 +16,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.urls import reverse_lazy
 from django.utils import timezone
+
 from .models import (
     Servicio, Usuario, Cita, CitaServicio, Pago,
     Disponibilidad, BloqueoHorario, ConfiguracionSistema,
@@ -95,7 +98,6 @@ def reserva_paso3_horarios(request, servicio_id, empleado_id):
         messages.error(request, 'Fecha inválida.')
         return redirect('reserva_paso1')
 
-    # Slots base (podrían depender de la Disponibilidad del empleado)
     slots_base = ['09:00', '10:00', '11:00', '12:30', '15:00', '16:30', '17:30', '18:30']
     citas_ese_dia = Cita.objects.filter(
         empleado=empleado,
@@ -127,15 +129,23 @@ def reserva_paso4_resumen(request):
     empleado = get_object_or_404(Usuario, pk=empleado_id)
 
     config = ConfiguracionSistema.objects.first()
-    porcentaje = config.porcentaje_abono if config else 50.00
 
-    monto_total = servicio.precio_serv
-    if config and config.permite_monto_fijo:
+    # porcentaje SIEMPRE Decimal (corrige el TypeError Decimal * float)
+    if config is not None:
+        porcentaje = config.porcentaje_abono
+    else:
+        porcentaje = Decimal('50.00')
+
+    monto_total = servicio.precio_serv  # ya es Decimal
+
+    if config is not None and config.permite_monto_fijo:
         monto_abono = config.monto_fijo_abono
     else:
-        monto_abono = (monto_total * (porcentaje / 100))
+        monto_abono = monto_total * (porcentaje / Decimal('100'))
 
-    saldo_salon = monto_total - monto_abono
+    # Redondeo al peso para evitar decimales largos en el template
+    monto_abono = monto_abono.quantize(Decimal('1'))
+    saldo_salon = (monto_total - monto_abono).quantize(Decimal('1'))
 
     return render(request, 'reserva_paso4_resumen.html', {
         'servicio': servicio,
@@ -157,8 +167,15 @@ def reserva_paso5_procesar_pago(request):
     servicio_id = request.POST.get('servicio_id')
     empleado_id = request.POST.get('empleado_id')
     fecha_hora_str = request.POST.get('fecha_hora')
-    monto_abono = request.POST.get('monto_abono')
+    monto_abono_str = request.POST.get('monto_abono')
     metodo_pago = request.POST.get('metodo_pago', 'webpay')
+
+    # Convertir monto a Decimal de forma segura
+    try:
+        monto_abono = Decimal(monto_abono_str)
+    except (InvalidOperation, TypeError, ValueError):
+        messages.error(request, 'El monto del abono es inválido.')
+        return redirect('reserva_paso1')
 
     try:
         fecha_hora = datetime.datetime.strptime(fecha_hora_str, '%Y-%m-%d %H:%M')
@@ -241,11 +258,10 @@ def despachar_notificacion_cita(cita):
 
 
 # ============================================================
-# CRUD DE CITAS (A2, A3, A5, A6, A7)
+# CRUD DE CITAS
 # ============================================================
 @login_required
 def mis_citas(request):
-    """Listado con búsqueda, filtro y paginación (A6). Evita N+1 (A7)."""
     qs = (
         Cita.objects
         .filter(cliente=request.user)
@@ -330,7 +346,6 @@ def eliminar_cita(request, pk):
 
 @login_required
 def crear_cita(request):
-    """Crear cita manual — solo admin (A2: ModelForm con save + save_m2m implícito)."""
     if request.user.rol != 'admin':
         raise PermissionDenied('Solo la administradora puede crear citas manuales.')
 
@@ -349,7 +364,7 @@ def crear_cita(request):
 
 
 # ============================================================
-# CUENTA DE USUARIO (A8)
+# CUENTA DE USUARIO
 # ============================================================
 @login_required
 def cuenta(request):
