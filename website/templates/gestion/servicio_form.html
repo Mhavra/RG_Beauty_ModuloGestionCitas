@@ -1,0 +1,22 @@
+{% extends 'base_gestion.html' %}
+{% block title %}{% if inst %}Editar{% else %}Nuevo{% endif %} Servicio - Gestión{% endblock %}
+{% block page_title %}{% if inst %}Editar servicio{% else %}Nuevo servicio{% endif %}{% endblock %}
+{% block content %}
+<div class="agenda-card" style="max-width:640px;">
+    <form method="POST" class="admin-form-grid">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group {% if field.name == 'nombre_serv' %}full{% endif %}">
+            <label>{{ field.label }}:</label>
+            {{ field }}
+            {% if field.help_text %}<span class="help-text">{{ field.help_text }}</span>{% endif %}
+            {% if field.errors %}<span class="error-text">{{ field.errors.0 }}</span>{% endif %}
+        </div>
+        {% endfor %}
+        <div class="form-actions full">
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <a href="{% url 'gestion_servicios' %}" class="btn btn-ghost">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

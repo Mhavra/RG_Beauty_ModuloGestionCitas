@@ -1,0 +1,28 @@
+{% extends 'base_gestion.html' %}
+{% block title %}Citas - Gestión{% endblock %}
+{% block page_title %}Citas{% endblock %}
+{% block content %}
+<form method="GET" class="admin-toolbar">
+    <input type="text" name="q" value="{{ q }}" placeholder="Buscar por cliente, profesional o ID..." class="form-input flex-input">
+    <select name="estado" class="form-input">
+        <option value="">Todos los estados</option>
+        {% for key, label in estados %}
+        <option value="{{ key }}" {% if estado == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-secondary">Buscar</button>
+    {% if q or estado %}<a href="{% url 'gestion_citas' %}" class="btn btn-ghost">Limpiar</a>{% endif %}
+</form>
+
+<div class="agenda-card">
+    {% include 'gestion/_tabla_citas.html' with citas=page_obj %}
+</div>
+
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}" class="btn btn-secondary btn-sm">← Anterior</a>{% endif %}
+    <span class="page-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}" class="btn btn-secondary btn-sm">Siguiente →</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'base_gestion.html' %}
+{% block title %}Servicios - Gestión{% endblock %}
+{% block page_title %}Servicios{% endblock %}
+{% block content %}
+<div class="admin-toolbar">
+    <a href="{% url 'gestion_servicio_nuevo' %}" class="btn btn-primary">+ Nuevo servicio</a>
+</div>
+<div class="agenda-card">
+    <div class="table-responsive">
+    <table class="data-table">
+        <thead><tr><th>Nombre</th><th>Duración</th><th>Precio</th><th>Acciones</th></tr></thead>
+        <tbody>
+        {% for s in servicios %}
+            <tr>
+                <td class="td-bold">{{ s.nombre_serv }}</td>
+                <td>{{ s.duracion_minutos }} min</td>
+                <td>${{ s.precio_serv|floatformat:"0" }}</td>
+                <td>
+                    <a href="{% url 'gestion_servicio_editar' s.pk %}" class="btn btn-secondary btn-sm">Editar</a>
+                    <a href="{% url 'gestion_servicio_eliminar' s.pk %}" class="btn btn-ghost btn-sm text-danger">Eliminar</a>
+                </td>
+            </tr
