@@ -1,0 +1,17 @@
+{% extends 'base_gestion.html' %}
+{% block title %}Confirmar eliminación - Gestión{% endblock %}
+{% block page_title %}Confirmar eliminación{% endblock %}
+{% block content %}
+<div class="agenda-card" style="max-width:560px;">
+    <h3>{{ titulo }}</h3>
+    <p class="lead">¿Seguro que quieres eliminar <strong>{{ obj }}</strong>? Esta acción no se puede deshacer.</p>
+
+    <form method="POST" class="form-actions">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary" style="background:#8a2c2c; border-color:#8a2c2c;">
+            Sí, eliminar
+        </button>
+        <a href="{% url cancel_url %}" class="btn btn-ghost">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

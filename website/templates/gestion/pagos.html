@@ -1,0 +1,54 @@
+{% extends 'base_gestion.html' %}
+{% block title %}Pagos - Gestión{% endblock %}
+{% block page_title %}Pagos{% endblock %}
+{% block content %}
+<div class="stat-row">
+    <div class="stat-card">
+        <span class="stat-icon">💰</span>
+        <span><small>TOTAL REGISTRADO</small><strong>${{ total|floatformat:"0" }}</strong><em>Todos los pagos</em></span>
+    </div>
+</div>
+
+<div class="agenda-card">
+    <div class="table-responsive">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Cita</th>
+                <th>Cliente</th>
+                <th>Monto</th>
+                <th>Método</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th>Transacción</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for p in page_obj %}
+            <tr>
+                <td>{{ p.fecha_pago|date:"d/m/Y H:i" }}</td>
+                <td class="td-bold">#{{ p.cita.id }}</td>
+                <td>{{ p.cliente.get_full_name|default:p.cliente.username }}</td>
+                <td>${{ p.monto|floatformat:"0" }}</td>
+                <td>{{ p.get_metodo_pago_display }}</td>
+                <td>{{ p.get_tipo_pago_display }}</td>
+                <td><span class="status-badge {% if p.estado == 'completado' %}status-confirmed{% else %}status-pending{% endif %}">{{ p.get_estado_display }}</span></td>
+                <td class="text-small">{{ p.transaccion_id|default:"—" }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="8" class="empty-state-table">No hay pagos registrados.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary btn-sm">← Anterior</a>{% endif %}
+    <span class="page-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary btn-sm">Siguiente →</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}
