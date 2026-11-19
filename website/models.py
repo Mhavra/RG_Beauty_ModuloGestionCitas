@@ -105,6 +105,8 @@ class Servicio(models.Model):
     precio_serv = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)],
     verbose_name="Precio total (CLP)")
 
+    imagen = models.ImageField(upload_to='servicios/', blank=True, null=True, verbose_name="Imagen del servicio")
+    
     class Meta:
         verbose_name = "Servicio"
         verbose_name_plural = "Servicios"

@@ -27,6 +27,9 @@ from .forms import CitaForm, EditarPerfilForm
 from django.db.models import Sum
 from django.core.paginator import Paginator
 
+from .forms import (
+    RegistroClienteForm, LoginForm, FiltroReporteForm, CitaForm, EditarPerfilForm, ServicioForm, ProfesionalForm, DisponibilidadForm, BloqueoForm, ConfiguracionForm
+)
 
 def home_view(request):
     return render(request, 'home.html')   
@@ -621,13 +624,13 @@ def gestion_servicio_form(request, pk=None):
         return redirect('reserva_paso1')
 
     inst = get_object_or_404(Servicio, pk=pk) if pk else None
-    form = ServicioForm(request.POST or None, instance=inst)
+    form = ServicioForm(request.POST or None, request.FILES or None, instance=inst)
 
     if request.method == 'POST' and form.is_valid():
         form.save()
         messages.success(request, 'Servicio guardado correctamente.')
         return redirect('gestion_servicios')
-
+    
     if request.method == 'POST':
         messages.error(request, 'Revisa los datos del formulario.')
 

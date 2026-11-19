@@ -173,13 +173,12 @@ class EditarPerfilForm(forms.ModelForm):
 class ServicioForm(forms.ModelForm):
     class Meta:
         model = Servicio
-        fields = ['nombre_serv', 'duracion_minutos', 'precio_serv']
+        fields = ['nombre_serv', 'duracion_minutos', 'precio_serv', 'imagen']
         widgets = {
             'nombre_serv': forms.TextInput(attrs={'class': 'form-input'}),
             'duracion_minutos': forms.NumberInput(attrs={'class': 'form-input', 'min': 15, 'step': 15}),
             'precio_serv': forms.NumberInput(attrs={'class': 'form-input', 'min': 0, 'step': 1000}),
         }
-
 
 class ProfesionalForm(forms.ModelForm):
     password = forms.CharField(
@@ -220,7 +219,6 @@ class ProfesionalForm(forms.ModelForm):
             user.save()
         return user
 
-
 class DisponibilidadForm(forms.ModelForm):
     class Meta:
         model = Disponibilidad
@@ -231,7 +229,6 @@ class DisponibilidadForm(forms.ModelForm):
             'hora_inicio': forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}),
             'hora_fin': forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}),
         }
-
 
 class BloqueoForm(forms.ModelForm):
     class Meta:
@@ -244,7 +241,6 @@ class BloqueoForm(forms.ModelForm):
             'motivo': forms.TextInput(attrs={'class': 'form-input'}),
         }
 
-
 class ConfiguracionForm(forms.ModelForm):
     class Meta:
         model = ConfiguracionSistema
@@ -253,3 +249,4 @@ class ConfiguracionForm(forms.ModelForm):
             'porcentaje_abono': forms.NumberInput(attrs={'class': 'form-input', 'step': '0.01', 'min': 0, 'max': 100}),
             'monto_fijo_abono': forms.NumberInput(attrs={'class': 'form-input', 'step': '100', 'min': 0}),
         }
+
