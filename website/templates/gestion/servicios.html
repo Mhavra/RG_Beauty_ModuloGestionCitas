@@ -19,4 +19,12 @@
                     <a href="{% url 'gestion_servicio_editar' s.pk %}" class="btn btn-secondary btn-sm">Editar</a>
                     <a href="{% url 'gestion_servicio_eliminar' s.pk %}" class="btn btn-ghost btn-sm text-danger">Eliminar</a>
                 </td>
-            </tr
+            </tr>
+        {% empty %}
+            <tr><td colspan="4" class="empty-state-table">Sin servicios. Crea el primero.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}

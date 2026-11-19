@@ -38,6 +38,7 @@ urlpatterns = [
     path('reserva/paso4/resumen/', views.reserva_paso4_resumen, name='reserva_paso4'),
     path('reserva/paso5/pagar/', views.reserva_paso5_procesar_pago, name='reserva_paso5'),
     path('reserva/exito/<int:cita_id>/', views.reserva_paso6_exito, name='reserva_paso6_exito'),
+    path('admin-panel/', views.admin_dashboard, name='admin_dashboard'),
     path('mis-citas/', views.mis_citas, name='mis_citas'),
     path('mis-citas/<int:pk>/', views.detalle_cita, name='detalle_cita'),
     path('mis-citas/<int:pk>/editar/', views.editar_cita, name='editar_cita'),
