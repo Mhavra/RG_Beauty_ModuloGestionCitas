@@ -1,0 +1,40 @@
+{% extends 'base_gestion.html' %}
+{% block title %}Bloqueos - Gestión{% endblock %}
+{% block page_title %}Bloqueos de horario{% endblock %}
+{% block content %}
+<div class="admin-toolbar">
+    <a href="{% url 'gestion_bloqueo_nuevo' %}" class="btn btn-primary">+ Nuevo bloqueo</a>
+</div>
+
+<div class="agenda-card">
+    <div class="table-responsive">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Profesional</th>
+                <th>Desde</th>
+                <th>Hasta</th>
+                <th>Motivo</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for b in items %}
+            <tr>
+                <td class="td-bold">{{ b.empleado.get_full_name|default:b.empleado.username }}</td>
+                <td>{{ b.fecha_inicio|date:"d/m/Y" }}</td>
+                <td>{{ b.fecha_fin|date:"d/m/Y" }}</td>
+                <td>{{ b.motivo }}</td>
+                <td>
+                    <a href="{% url 'gestion_bloqueo_editar' b.pk %}" class="btn btn-secondary btn-sm">Editar</a>
+                    <a href="{% url 'gestion_bloqueo_eliminar' b.pk %}" class="btn btn-ghost btn-sm text-danger">Eliminar</a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="5" class="empty-state-table">No hay bloqueos registrados.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}

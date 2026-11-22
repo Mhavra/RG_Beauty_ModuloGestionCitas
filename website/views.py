@@ -22,9 +22,14 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from .forms import CitaForm, EditarPerfilForm
+from django.db.models import Sum
+from django.core.paginator import Paginator
 
+from .forms import (
+    RegistroClienteForm, LoginForm, FiltroReporteForm, CitaForm, EditarPerfilForm, ServicioForm, ProfesionalForm, DisponibilidadForm, BloqueoForm, ConfiguracionForm
+)
 
 def home_view(request):
     return render(request, 'home.html')   
@@ -60,24 +65,11 @@ def registro_view(request):
         form = RegistroClienteForm() 
     return render(request, 'registro.html', {'form': form}) 
 
-@login_required
-def reserva_paso1_servicios(request): 
-    servicios = Servicio.objects.all() 
-    return render(request, 'reserva_paso1_servicios.html', {'servicios': servicios}) 
-
- 
-def reserva_paso2_fecha(request, servicio_id): 
-    servicio = get_object_or_404(Servicio, pk=servicio_id) 
-    profesionales = Usuario.objects.filter(rol__in=['admin', 'profesional']) 
-    return render(request, 'reserva_paso2_fecha.html', {'servicio': servicio, 'profesionales': profesionales})
-
-def reserva_paso3_horarios(request, servicio_id, empleado_id): 
-    servicio = get_object_or_404(Servicio, pk=servicio_id) 
-    empleado = get_object_or_404(Usuario, pk=empleado_id) 
-    
-    fecha_str = request.GET.get('fecha', datetime.date.today().strftime('%Y-%m-%d')) 
-    fecha_obj = datetime.datetime.strptime(fecha_str, '%Y-%m-%d').date()
-    
+# --------------------------------------------------
+# FUNCIÓN REUTILIZABLE (para no repetir lógica)
+# --------------------------------------------------
+def calcular_horarios_disponibles(servicio, empleado, fecha_obj):
+    """Devuelve la lista de horarios libres para un empleado, servicio y fecha."""
     dias_semana = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo']
     nombre_dia = dias_semana[fecha_obj.weekday()]
     
@@ -104,17 +96,9 @@ def reserva_paso3_horarios(request, servicio_id, empleado_id):
                 estado__in=['pendiente', 'confirmada']
             )
             
-            print("\n" + "="*50)
-            print(f"DEBUG: BUSCANDO CITAS PARA EL DÍA: {fecha_obj}")
-            print(f"DEBUG: EMPLEADO SELECCIONADO: {empleado.get_full_name()} (ID: {empleado.id})")
-            
             rangos_ocupados = []
             for cita in citas_existentes:
-                # Convierte a Hora local
                 cita_inicio_local = timezone.localtime(cita.fecha_hora_cita).replace(tzinfo=None)
-                
-                print(f" -> Revisando Cita #{cita.id}: Fecha BD (local) = {cita_inicio_local}")
-                
                 if cita_inicio_local.date() == fecha_obj:
                     servicios_de_cita = cita.citaservicio_set.all()
                     if servicios_de_cita.exists():
@@ -124,15 +108,10 @@ def reserva_paso3_horarios(request, servicio_id, empleado_id):
                     
                     cita_fin_local = cita_inicio_local + datetime.timedelta(minutes=duracion_cita)
                     rangos_ocupados.append((cita_inicio_local, cita_fin_local))
-                    print(f"    [OCUPADO] Bloque añadido: {cita_inicio_local.strftime('%H:%M')} a {cita_fin_local.strftime('%H:%M')} ({duracion_cita} min)")
-                else:
-                    print(f"    [IGNORADA] No es del día seleccionado.")
             
             duracion_servicio = datetime.timedelta(minutes=servicio.duracion_minutos)
             intervalo = datetime.timedelta(minutes=30)
             hora_candidata = hora_inicio_dia
-            
-            print(f"DEBUG: El servicio a reservar dura {servicio.duracion_minutos} minutos.")
             
             while hora_candidata + duracion_servicio <= hora_fin_dia:
                 fin_candidato = hora_candidata + duracion_servicio
@@ -141,15 +120,90 @@ def reserva_paso3_horarios(request, servicio_id, empleado_id):
                 for inicio_ocupado, fin_ocupado in rangos_ocupados:
                     if hora_candidata < fin_ocupado and fin_candidato > inicio_ocupado:
                         solapa = True
-                        print(f"    [SOLAPA] Hora {hora_candidata.strftime('%H:%M')} - {fin_candidato.strftime('%H:%M')} choca con {inicio_ocupado.strftime('%H:%M')} - {fin_ocupado.strftime('%H:%M')}")
                         break
                 
                 if not solapa:
                     horarios_libres.append(hora_candidata.strftime('%H:%M'))
                 
                 hora_candidata += intervalo
-            print("="*50 + "\n")
+    
+    return horarios_libres
 
+
+# --------------------------------------------------
+# VISTA DEL PASO 3 (usa la función)
+# --------------------------------------------------
+
+
+# --------------------------------------------------
+# API PARA QUE EL PASO 2 VERIFIQUE ANTES DE AVANZAR
+# --------------------------------------------------
+@login_required
+def api_verificar_disponibilidad(request, servicio_id, empleado_id):
+    """Devuelve JSON diciendo si hay horarios disponibles o no."""
+    servicio = get_object_or_404(Servicio, pk=servicio_id)
+    empleado = get_object_or_404(Usuario, pk=empleado_id)
+    fecha_str = request.GET.get('fecha')
+    
+    if not fecha_str:
+        return JsonResponse({'disponible': False, 'count': 0, 'error': 'Fecha no proporcionada'})
+    
+    try:
+        fecha_obj = datetime.datetime.strptime(fecha_str, '%Y-%m-%d').date()
+    except ValueError:
+        return JsonResponse({'disponible': False, 'count': 0, 'error': 'Formato de fecha inválido'})
+    
+    hoy = timezone.localdate()
+    if fecha_obj <= hoy:
+        return JsonResponse({'disponible': False, 'count': 0, 'error': 'Fecha no permitida'})
+    
+    horarios = calcular_horarios_disponibles(servicio, empleado, fecha_obj)
+    return JsonResponse({'disponible': len(horarios) > 0, 'count': len(horarios)})
+
+@login_required
+def reserva_paso1_servicios(request): 
+    servicios = Servicio.objects.all() 
+    return render(request, 'reserva_paso1_servicios.html', {'servicios': servicios}) 
+
+@login_required
+def reserva_paso2_fecha(request, servicio_id): 
+    servicio = get_object_or_404(Servicio, pk=servicio_id) 
+    profesionales = Usuario.objects.filter(rol__in=['admin', 'profesional']) 
+    
+    # Calcular fecha mínima: mañana
+    hoy = timezone.localdate()
+    fecha_minima = hoy + datetime.timedelta(days=1)
+    
+    return render(request, 'reserva_paso2_fecha.html', {
+        'servicio': servicio, 
+        'profesionales': profesionales,
+        'fecha_minima': fecha_minima.strftime('%Y-%m-%d')
+    })
+
+@login_required
+def reserva_paso3_horarios(request, servicio_id, empleado_id): 
+    servicio = get_object_or_404(Servicio, pk=servicio_id) 
+    empleado = get_object_or_404(Usuario, pk=empleado_id) 
+    
+    # 1. Validar que la fecha venga en la URL
+    fecha_str = request.GET.get('fecha')
+    if not fecha_str:
+        messages.error(request, 'Debes seleccionar una fecha antes de ver los horarios.')
+        return redirect('reserva_paso2', servicio_id=servicio_id)
+    
+    # 2. Convertir la fecha a objeto date
+    fecha_obj = datetime.datetime.strptime(fecha_str, '%Y-%m-%d').date()
+    
+    # 3. Validación de seguridad: bloquear fechas pasadas o de hoy
+    hoy = timezone.localdate()
+    if fecha_obj <= hoy:
+        messages.error(request, 'Debes seleccionar una fecha a partir de mañana.')
+        return redirect('reserva_paso2', servicio_id=servicio_id)
+    
+    # 4. Calcular horarios usando la función reutilizable
+    horarios_libres = calcular_horarios_disponibles(servicio, empleado, fecha_obj)
+
+    # 5. Renderizar el template
     return render(request, 'reserva_paso3_horarios.html', {
         'servicio': servicio, 
         'empleado': empleado, 
@@ -163,6 +217,11 @@ def reserva_paso4_resumen(request):
     empleado_id = request.POST.get('empleado_id') 
     fecha_hora_str = request.POST.get('fecha_hora') 
      
+    # VALIDACIÓN: Si no hay fecha o es "None", devolver al paso 3
+    if not fecha_hora_str or fecha_hora_str == 'None':
+        messages.error(request, 'Debes seleccionar un horario válido antes de continuar.')
+        return redirect('reserva_paso3', servicio_id=servicio_id, empleado_id=empleado_id)
+
     servicio = get_object_or_404(Servicio, pk=servicio_id) 
     empleado = get_object_or_404(Usuario, pk=empleado_id) 
      
@@ -183,7 +242,6 @@ def reserva_paso4_resumen(request):
         'saldo_salon': saldo_salon, 'porcentaje': porcentaje 
     }) 
 
-
 @login_required 
 def reserva_paso5_procesar_pago(request): 
     if request.method == 'POST': 
@@ -191,11 +249,31 @@ def reserva_paso5_procesar_pago(request):
         empleado_id = request.POST.get('empleado_id') 
         fecha_hora_str = request.POST.get('fecha_hora')
         monto_abono_raw = request.POST.get('monto_abono', '0') 
-        monto_abono = Decimal(monto_abono_raw.replace(',','.'))
         metodo_pago = request.POST.get('metodo_pago', 'webpay') 
+         
+        # VALIDACIÓN: Evitar que el sistema intente procesar "None"
+        if not fecha_hora_str or fecha_hora_str == 'None':
+            messages.error(request, 'Hubo un problema con la fecha. Por favor, selecciona tu horario nuevamente.')
+            return redirect('reserva_paso3', servicio_id=servicio_id, empleado_id=empleado_id)
+
+        # Conversión segura de monto (reemplazo de coma por punto por locale es-cl)
+        monto_abono = Decimal(monto_abono_raw.replace(',', '.'))
+
+        servicio = get_object_or_404(Servicio, pk=servicio_id)
+        empleado = get_object_or_404(Usuario, pk=empleado_id)
          
         fecha_hora_naive = datetime.datetime.strptime(fecha_hora_str, '%Y-%m-%d %H:%M') 
         fecha_hora = timezone.make_aware(fecha_hora_naive, timezone.get_current_timezone())
+        fecha_obj = fecha_hora.date()
+        
+        # VALIDACIÓN EXTRA: Verificar que el horario sigue libre
+        horarios_actuales = calcular_horarios_disponibles(servicio, empleado, fecha_obj)
+        hora_solicitada = fecha_hora.strftime('%H:%M')
+        
+        if hora_solicitada not in horarios_actuales:
+            messages.error(request, 'Lo sentimos, el horario que seleccionaste ya fue reservado por otra persona. Por favor elige otro.')
+            url = reverse('reserva_paso3', kwargs={'servicio_id': servicio_id, 'empleado_id': empleado_id})
+            return redirect(f'{url}?fecha={fecha_obj.isoformat()}')
          
         try: 
             with transaction.atomic(): 
@@ -204,13 +282,26 @@ def reserva_paso5_procesar_pago(request):
                 ).exists() 
                  
                 if cita_existente: 
-                    return JsonResponse({'status': 'error', 'message': 'El horario seleccionado acaba de ser reservado.'}, status=409) 
+                    messages.error(request, 'El horario acaba de ser reservado por otra persona. Por favor elige otro.')
+                    url = reverse('reserva_paso3', kwargs={'servicio_id': servicio_id, 'empleado_id': empleado_id})
+                    return redirect(f'{url}?fecha={fecha_obj.isoformat()}')
+
+                # Recalcular monto por seguridad (evitar que el usuario lo manipule en el HTML)
+                config = ConfiguracionSistema.objects.first()
+                porcentaje = config.porcentaje_abono if config else Decimal('50.00')
+                monto_total = servicio.precio_serv
+                if config and config.permite_monto_fijo:
+                    monto_abono_calculado = config.monto_fijo_abono
+                else:
+                    monto_abono_calculado = (monto_total * (porcentaje / Decimal('100')))
+                
+                # Usamos el calculado por seguridad, o el del POST si confías en el front (mejor usar el calculado)
+                monto_abono = monto_abono_calculado
                  
                 nueva_cita = Cita.objects.create( 
                     cliente=request.user, empleado_id=empleado_id, fecha_hora_cita=fecha_hora, 
                     estado='confirmada', monto_abono=monto_abono, estado_abono='pagado' 
                 ) 
-                servicio = Servicio.objects.get(pk=servicio_id) 
                 CitaServicio.objects.create(cita=nueva_cita, servicio=servicio) 
                  
                 Pago.objects.create( 
@@ -220,15 +311,18 @@ def reserva_paso5_procesar_pago(request):
                 ) 
                  
                 despachar_notificacion_cita(nueva_cita) 
+                messages.success(request, '¡Tu reserva ha sido confirmada con éxito!')
                 return redirect('reserva_paso6_exito', cita_id=nueva_cita.id) 
                  
         except Exception as e: 
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
+            messages.error(request, f'Ocurrió un error al procesar tu pago: {str(e)}')
+            return redirect('reserva_paso1')
+@login_required
 def reserva_paso6_exito(request, cita_id): 
     cita = get_object_or_404(Cita, pk=cita_id) 
     return render(request, 'reserva_paso6_exito.html', {'cita': cita}) 
- 
+
+
 def despachar_notificacion_cita(cita): 
     intento_whatsapp_exitoso = False 
     log_evento = {'timestamp': datetime.datetime.now().isoformat(), 'canal': 'WhatsApp Business API', 'estado': 'Fallido'} 
@@ -440,3 +534,314 @@ class CambiarPasswordView(LoginRequiredMixin, PasswordChangeView):
     def form_valid(self, form):
         messages.success(self.request, 'Tu contraseña fue actualizada correctamente.')
         return super().form_valid(form)
+
+@login_required
+def admin_dashboard(request):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+        messages.error(request, 'No tienes permiso para acceder al panel de administración.')
+        return redirect('reserva_paso1')
+
+    citas = (
+        Cita.objects
+        .select_related('cliente', 'empleado')
+        .prefetch_related('servicios')
+        .order_by('-fecha_hora_cita')
+    )
+    config = ConfiguracionSistema.objects.first()
+
+    total_citas = citas.count()
+    citas_confirmadas = citas.filter(estado='confirmada').count()
+    citas_canceladas = citas.filter(estado='cancelada').count()
+    citas_hoy = citas.filter(fecha_hora_cita__date=timezone.localdate()).count()
+    ingresos_abonos = (
+        Pago.objects
+        .filter(estado='completado', tipo_pago='abono')
+        .aggregate(s=Sum('monto'))['s'] or 0
+    )
+
+    return render(request, 'gestion/dashboard.html', {
+        'citas': citas[:10],
+        'config': config,
+        'total_citas': total_citas,
+        'citas_confirmadas': citas_confirmadas,
+        'citas_canceladas': citas_canceladas,
+        'citas_hoy': citas_hoy,
+        'ingresos_abonos': ingresos_abonos,
+    })
+
+
+# ---------- Citas: listado con filtros ----------
+@login_required
+def gestion_citas(request):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+        messages.error(request, 'No tienes permiso para acceder a esta sección.')
+        return redirect('reserva_paso1')
+
+    qs = (
+        Cita.objects
+        .select_related('cliente', 'empleado')
+        .prefetch_related('servicios')
+        .order_by('-fecha_hora_cita')
+    )
+
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(
+            Q(cliente__first_name__icontains=q) | Q(cliente__last_name__icontains=q)
+            | Q(empleado__first_name__icontains=q) | Q(empleado__last_name__icontains=q)
+            | Q(id__icontains=q)
+        )
+
+    estado = request.GET.get('estado', '').strip()
+    if estado:
+        qs = qs.filter(estado=estado)
+
+    page_obj = Paginator(qs, 20).get_page(request.GET.get('page'))
+
+    return render(request, 'gestion/citas.html', {
+        'page_obj': page_obj,
+        'q': q,
+        'estado': estado,
+        'estados': Cita.ESTADOS_CITA,
+    })
+
+
+# ---------- Servicios ----------
+@login_required
+def gestion_servicios(request):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+        messages.error(request, 'No tienes permiso para acceder a esta sección.')
+        return redirect('reserva_paso1')
+
+    servicios = Servicio.objects.all().order_by('nombre_serv')
+    return render(request, 'gestion/servicios.html', {'servicios': servicios})
+
+
+@login_required
+def gestion_servicio_form(request, pk=None):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+        messages.error(request, 'No tienes permiso para acceder a esta sección.')
+        return redirect('reserva_paso1')
+
+    inst = get_object_or_404(Servicio, pk=pk) if pk else None
+    form = ServicioForm(request.POST or None, request.FILES or None, instance=inst)
+
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Servicio guardado correctamente.')
+        return redirect('gestion_servicios')
+    
+    if request.method == 'POST':
+        messages.error(request, 'Revisa los datos del formulario.')
+
+    return render(request, 'gestion/servicio_form.html', {'form': form, 'inst': inst})
+
+
+@login_required
+def gestion_servicio_eliminar(request, pk):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+        messages.error(request, 'No tienes permiso para acceder a esta sección.')
+        return redirect('reserva_paso1')
+
+    servicio = get_object_or_404(Servicio, pk=pk)
+
+    if request.method == 'POST':
+        servicio.delete()
+        messages.success(request, 'Servicio eliminado.')
+        return redirect('gestion_servicios')
+
+    return render(request, 'gestion/confirmar_eliminar.html', {
+        'obj': servicio,
+        'titulo': f'Eliminar servicio: {servicio.nombre_serv}',
+        'cancel_url': 'gestion_servicios',
+    })
+
+
+# ---------- Profesionales ----------
+@login_required
+def gestion_profesionales(request):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+        messages.error(request, 'No tienes permiso para acceder a esta sección.')
+        return redirect('reserva_paso1')
+
+    profesionales = (
+        Usuario.objects
+        .filter(rol__in=['profesional', 'admin', 'estilista'])
+        .order_by('first_name')
+    )
+    return render(request, 'gestion/profesionales.html', {'profesionales': profesionales})
+
+
+@login_required
+def gestion_profesional_form(request, pk=None):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+        messages.error(request, 'No tienes permiso para acceder a esta sección.')
+        return redirect('reserva_paso1')
+
+    inst = get_object_or_404(Usuario, pk=pk) if pk else None
+    form = ProfesionalForm(request.POST or None, instance=inst)
+
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Profesional guardado correctamente.')
+        return redirect('gestion_profesionales')
+
+    if request.method == 'POST':
+        messages.error(request, 'Revisa los datos del formulario.')
+
+    return render(request, 'gestion/profesional_form.html', {'form': form, 'inst': inst})
+
+
+# ---------- Disponibilidad ----------
+@login_required
+def gestion_disponibilidad(request):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+        messages.error(request, 'No tienes permiso para acceder a esta sección.')
+        return redirect('reserva_paso1')
+
+    items = (
+        Disponibilidad.objects
+        .select_related('empleado')
+        .order_by('empleado__first_name', 'dia_semana', 'hora_inicio')
+    )
+    return render(request, 'gestion/disponibilidad.html', {'items': items})
+
+
+@login_required
+def gestion_disponibilidad_form(request, pk=None):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+        messages.error(request, 'No tienes permiso para acceder a esta sección.')
+        return redirect('reserva_paso1')
+
+    inst = get_object_or_404(Disponibilidad, pk=pk) if pk else None
+    form = DisponibilidadForm(request.POST or None, instance=inst)
+
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Disponibilidad guardada correctamente.')
+        return redirect('gestion_disponibilidad')
+
+    if request.method == 'POST':
+        messages.error(request, 'Revisa los datos del formulario.')
+
+    return render(request, 'gestion/disponibilidad_form.html', {'form': form, 'inst': inst})
+
+
+@login_required
+def gestion_disponibilidad_eliminar(request, pk):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+        messages.error(request, 'No tienes permiso para acceder a esta sección.')
+        return redirect('reserva_paso1')
+
+    item = get_object_or_404(Disponibilidad, pk=pk)
+
+    if request.method == 'POST':
+        item.delete()
+        messages.success(request, 'Disponibilidad eliminada.')
+        return redirect('gestion_disponibilidad')
+
+    return render(request, 'gestion/confirmar_eliminar.html', {
+        'obj': item,
+        'titulo': 'Eliminar disponibilidad',
+        'cancel_url': 'gestion_disponibilidad',
+    })
+
+
+# ---------- Bloqueos ----------
+@login_required
+def gestion_bloqueos(request):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+        messages.error(request, 'No tienes permiso para acceder a esta sección.')
+        return redirect('reserva_paso1')
+
+    items = (
+        BloqueoHorario.objects
+        .select_related('empleado')
+        .order_by('-fecha_inicio')
+    )
+    return render(request, 'gestion/bloqueos.html', {'items': items})
+
+
+@login_required
+def gestion_bloqueo_form(request, pk=None):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+        messages.error(request, 'No tienes permiso para acceder a esta sección.')
+        return redirect('reserva_paso1')
+
+    inst = get_object_or_404(BloqueoHorario, pk=pk) if pk else None
+    form = BloqueoForm(request.POST or None, instance=inst)
+
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Bloqueo guardado correctamente.')
+        return redirect('gestion_bloqueos')
+
+    if request.method == 'POST':
+        messages.error(request, 'Revisa los datos del formulario.')
+
+    return render(request, 'gestion/bloqueo_form.html', {'form': form, 'inst': inst})
+
+
+@login_required
+def gestion_bloqueo_eliminar(request, pk):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+        messages.error(request, 'No tienes permiso para acceder a esta sección.')
+        return redirect('reserva_paso1')
+
+    item = get_object_or_404(BloqueoHorario, pk=pk)
+
+    if request.method == 'POST':
+        item.delete()
+        messages.success(request, 'Bloqueo eliminado.')
+        return redirect('gestion_bloqueos')
+
+    return render(request, 'gestion/confirmar_eliminar.html', {
+        'obj': item,
+        'titulo': 'Eliminar bloqueo',
+        'cancel_url': 'gestion_bloqueos',
+    })
+
+
+# ---------- Pagos ----------
+@login_required
+def gestion_pagos(request):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+        messages.error(request, 'No tienes permiso para acceder a esta sección.')
+        return redirect('reserva_paso1')
+
+    qs = (
+        Pago.objects
+        .select_related('cita', 'cliente')
+        .order_by('-fecha_pago')
+    )
+    page_obj = Paginator(qs, 30).get_page(request.GET.get('page'))
+    total = qs.aggregate(t=Sum('monto'))['t'] or 0
+
+    return render(request, 'gestion/pagos.html', {
+        'page_obj': page_obj,
+        'total': total,
+    })
+
+
+# ---------- Configuración ----------
+@login_required
+def gestion_configuracion(request):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+        messages.error(request, 'No tienes permiso para acceder a esta sección.')
+        return redirect('reserva_paso1')
+
+    config = ConfiguracionSistema.objects.first()
+    if not config:
+        config = ConfiguracionSistema.objects.create()
+
+    form = ConfiguracionForm(request.POST or None, instance=config)
+
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Configuración actualizada.')
+        return redirect('gestion_configuracion')
+
+    if request.method == 'POST':
+        messages.error(request, 'Revisa los datos del formulario.')
+
+    return render(request, 'gestion/configuracion.html', {'form': form, 'config': config})

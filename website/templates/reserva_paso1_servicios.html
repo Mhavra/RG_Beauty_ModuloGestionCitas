@@ -10,7 +10,11 @@
     <div class="service-list">
         {% for s in servicios %}
         <a href="{% url 'reserva_paso2' s.id %}" class="service-card">
-            <img src="https://images.unsplash.com/photo-1470259078422-826894b933aa?auto=format&fit=crop&w=600&q=85" alt="{{ s.nombre_serv }}" />
+            {% if s.imagen %}
+                <img src="{{ s.imagen.url }}" alt="{{ s.nombre_serv }}" />
+            {% else %}
+                <img src="https://images.unsplash.com/photo-1470259078422-826894b933aa?auto=format&fit=crop&w=600&q=85" alt="{{ s.nombre_serv }}" />
+            {% endif %}
             <div class="service-info">
                 <span class="mini-tag">Servicio</span>
                 <h2>{{ s.nombre_serv }}</h2>

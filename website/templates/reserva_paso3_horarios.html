@@ -20,15 +20,19 @@
                 <span>{{ h }}</span>
             </label>
             {% empty %}
+            <!-- Si no hay horarios, mostramos esto y NO mostramos el botón de enviar -->
             <div class="notice notice-center">
-                No hay bloques libres para este día. Intenta otra fecha.
+                No hay bloques libres para este día. Por favor, <a href="{% url 'reserva_paso2' servicio.id %}" style="text-decoration: underline; font-weight: bold;"> vuelve atrás </a> e intenta con otra fecha.
             </div>
             {% endfor %}
         </div>
 
+        <!-- El botón de continuar SOLO se muestra si la lista 'horarios' NO está vacía -->
+        {% if horarios %}
         <button type="submit" class="btn btn-primary full">
             Continuar con el Resumen &rarr;
         </button>
+        {% endif %}
     </form>
 </section>
 {% endblock %}
