@@ -1,0 +1,40 @@
+{% extends 'base_gestion.html' %}
+{% block title %}Disponibilidad - Gestión{% endblock %}
+{% block page_title %}Disponibilidad horaria{% endblock %}
+{% block content %}
+<div class="admin-toolbar">
+    <a href="{% url 'gestion_disponibilidad_nueva' %}" class="btn btn-primary">+ Nuevo bloque de disponibilidad</a>
+</div>
+
+<div class="agenda-card">
+    <div class="table-responsive">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Profesional</th>
+                <th>Día</th>
+                <th>Hora inicio</th>
+                <th>Hora fin</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for d in items %}
+            <tr>
+                <td class="td-bold">{{ d.empleado.get_full_name|default:d.empleado.username }}</td>
+                <td>{{ d.get_dia_semana_display }}</td>
+                <td>{{ d.hora_inicio|time:"H:i" }}</td>
+                <td>{{ d.hora_fin|time:"H:i" }}</td>
+                <td>
+                    <a href="{% url 'gestion_disponibilidad_editar' d.pk %}" class="btn btn-secondary btn-sm">Editar</a>
+                    <a href="{% url 'gestion_disponibilidad_eliminar' d.pk %}" class="btn btn-ghost btn-sm text-danger">Eliminar</a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="5" class="empty-state-table">No hay bloques de disponibilidad registrados.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}

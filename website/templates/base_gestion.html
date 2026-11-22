@@ -1,0 +1,71 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gestión - RG Beauty{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/gestion.css' %}">
+</head>
+<body class="admin-body">
+    <aside class="admin-sidebar" id="adminSidebar">
+        <a href="{% url 'admin_dashboard' %}" class="brand admin-brand">
+            <span class="brand-mark">RG</span>
+            <span class="brand-copy"><strong>RG Beauty</strong><small>GESTIÓN</small></span>
+        </a>
+
+        <nav class="admin-nav">
+            <a href="{% url 'admin_dashboard' %}" class="admin-nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+                📊 <span>Dashboard</span>
+            </a>
+            <a href="{% url 'gestion_citas' %}" class="admin-nav-link {% if 'gestion_cita' in request.resolver_match.url_name %}active{% endif %}">
+                📅 <span>Citas</span>
+            </a>
+            <a href="{% url 'gestion_servicios' %}" class="admin-nav-link {% if 'gestion_servicio' in request.resolver_match.url_name %}active{% endif %}">
+                💅 <span>Servicios</span>
+            </a>
+            <a href="{% url 'gestion_profesionales' %}" class="admin-nav-link {% if 'gestion_profesional' in request.resolver_match.url_name %}active{% endif %}">
+                👩 <span>Profesionales</span>
+            </a>
+            <a href="{% url 'gestion_disponibilidad' %}" class="admin-nav-link {% if 'gestion_disponibilidad' in request.resolver_match.url_name %}active{% endif %}">
+                🕐 <span>Disponibilidad</span>
+            </a>
+            <a href="{% url 'gestion_bloqueos' %}" class="admin-nav-link {% if 'gestion_bloqueo' in request.resolver_match.url_name %}active{% endif %}">
+                🚫 <span>Bloqueos</span>
+            </a>
+            <a href="{% url 'gestion_pagos' %}" class="admin-nav-link {% if 'gestion_pago' in request.resolver_match.url_name %}active{% endif %}">
+                💰 <span>Pagos</span>
+            </a>
+            <a href="{% url 'gestion_configuracion' %}" class="admin-nav-link {% if 'gestion_configuracion' in request.resolver_match.url_name %}active{% endif %}">
+                ⚙️ <span>Configuración</span>
+            </a>
+        </nav>
+
+        <div class="admin-sidebar-footer">
+            <a href="{% url 'reserva_paso1' %}" class="btn btn-ghost btn-sm">Ver reserva web</a>
+            <a href="{% url 'logout' %}" class="btn btn-ghost btn-sm">Salir</a>
+        </div>
+    </aside>
+
+    <div class="admin-main-wrap">
+        <header class="admin-topbar">
+            <button class="admin-burger" onclick="document.getElementById('adminSidebar').classList.toggle('open')">☰</button>
+            <h2>{% block page_title %}Gestión{% endblock %}</h2>
+            <span class="status-badge">Abono: {{ config.porcentaje_abono|default:"50" }}%</span>
+        </header>
+
+        <main class="admin-content">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>

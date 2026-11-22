@@ -1,0 +1,28 @@
+{% extends 'base_gestion.html' %}
+{% block title %}Configuración - Gestión{% endblock %}
+{% block page_title %}Configuración del sistema{% endblock %}
+{% block content %}
+<div class="agenda-card" style="max-width:720px;">
+    <form method="POST" class="admin-form-grid">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group {% if field.name == 'permite_monto_fijo' %}full{% endif %}">
+            <label>{{ field.label }}:</label>
+            {{ field }}
+            {% if field.help_text %}<span class="help-text">{{ field.help_text }}</span>{% endif %}
+            {% if field.errors %}<span class="error-text">{{ field.errors.0 }}</span>{% endif %}
+        </div>
+        {% endfor %}
+        <div class="form-actions full">
+            <button type="submit" class="btn btn-primary">Guardar configuración</button>
+        </div>
+    </form>
+
+    {% if config %}
+    <p class="text-small mt-16">
+        <strong>Configuración actual:</strong> {{ config }}
+        <br><small>Última modificación: {{ config.ultima_modificacion|date:"d/m/Y H:i" }}</small>
+    </p>
+    {% endif %}
+</div>
+{% endblock %}

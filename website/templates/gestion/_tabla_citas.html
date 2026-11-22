@@ -1,0 +1,39 @@
+<div class="table-responsive">
+<table class="data-table">
+    <thead>
+        <tr><th>ID</th><th>Cliente</th><th>Profesional</th><th>Fecha/Hora</th><th>Abono</th><th>Estado</th><th>Acciones</th></tr>
+    </thead>
+    <tbody>
+    {% for c in citas %}
+        <tr>
+            <td class="td-bold">#{{ c.id }}</td>
+            <td>{{ c.cliente.get_full_name|default:c.cliente.username }}</td>
+            <td>{{ c.empleado.first_name }}</td>
+            <td>{{ c.fecha_hora_cita|date:"d/m/Y H:i" }}</td>
+            <td>${{ c.monto_abono|floatformat:"0" }}</td>
+            <td>
+                <span class="status-badge {% if c.estado == 'confirmada' %}status-confirmed{% else %}status-pending{% endif %}">
+                    {{ c.get_estado_display }}
+                </span>
+            </td>
+            <td>
+                <form method="POST" action="{% url 'admin_cambiar_estado' c.pk %}" style="display:flex; gap:4px;">
+                    {% csrf_token %}
+                    {% if c.estado != 'completada' %}
+                        <button name="estado" value="completada" class="btn btn-sm" style="background:#edf8f2;color:#2d6a4f;border:1px solid #a6d8bd;" title="Completada">✔️</button>
+                    {% endif %}
+                    {% if c.estado != 'cancelada' %}
+                        <button name="estado" value="cancelada" class="btn btn-sm" style="background:#fff1f1;color:#8a2c2c;border:1px solid #f3cdcd;" title="Cancelar">✖️</button>
+                    {% endif %}
+                    {% if c.estado != 'no_asistio' %}
+                        <button name="estado" value="no_asistio" class="btn btn-sm" style="background:#f8f9fa;color:#716c70;border:1px solid #ebe7e8;" title="No asistió">🚫</button>
+                    {% endif %}
+                </form>
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="7" class="empty-state-table">Sin citas.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>

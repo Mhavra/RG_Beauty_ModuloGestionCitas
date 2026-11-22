@@ -3,6 +3,7 @@ import datetime
 from django.utils import timezone
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from .models import Cita, ConfiguracionSistema, Usuario, Servicio, CitaServicio
+from .models import Servicio, Usuario, Disponibilidad, BloqueoHorario, ConfiguracionSistema
 
 class RegistroClienteForm(UserCreationForm):
     first_name = forms.CharField(
@@ -168,3 +169,84 @@ class EditarPerfilForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+
+class ServicioForm(forms.ModelForm):
+    class Meta:
+        model = Servicio
+        fields = ['nombre_serv', 'duracion_minutos', 'precio_serv', 'imagen']
+        widgets = {
+            'nombre_serv': forms.TextInput(attrs={'class': 'form-input'}),
+            'duracion_minutos': forms.NumberInput(attrs={'class': 'form-input', 'min': 15, 'step': 15}),
+            'precio_serv': forms.NumberInput(attrs={'class': 'form-input', 'min': 0, 'step': 1000}),
+        }
+
+class ProfesionalForm(forms.ModelForm):
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-input'}),
+        required=False,
+        label='Contraseña',
+        help_text='Dejar vacío para no cambiar la contraseña.'
+    )
+
+    class Meta:
+        model = Usuario
+        fields = ['username', 'first_name', 'last_name', 'email', 'telefono', 'rol']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-input'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-input'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-input'}),
+            'email': forms.EmailInput(attrs={'class': 'form-input'}),
+            'telefono': forms.TextInput(attrs={'class': 'form-input', 'placeholder': '+56912345678'}),
+            'rol': forms.Select(attrs={'class': 'form-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['rol'].choices = [
+            ('profesional', 'Profesional'),
+            ('estilista', 'Estilista'),
+            ('admin', 'Administradora'),
+        ]
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        pwd = self.cleaned_data.get('password')
+        if pwd:
+            user.set_password(pwd)
+        elif not user.pk:
+            user.set_unusable_password()
+        if commit:
+            user.save()
+        return user
+
+class DisponibilidadForm(forms.ModelForm):
+    class Meta:
+        model = Disponibilidad
+        fields = ['empleado', 'dia_semana', 'hora_inicio', 'hora_fin']
+        widgets = {
+            'empleado': forms.Select(attrs={'class': 'form-input'}),
+            'dia_semana': forms.Select(attrs={'class': 'form-input'}),
+            'hora_inicio': forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}),
+            'hora_fin': forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}),
+        }
+
+class BloqueoForm(forms.ModelForm):
+    class Meta:
+        model = BloqueoHorario
+        fields = ['empleado', 'fecha_inicio', 'fecha_fin', 'motivo']
+        widgets = {
+            'empleado': forms.Select(attrs={'class': 'form-input'}),
+            'fecha_inicio': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
+            'fecha_fin': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
+            'motivo': forms.TextInput(attrs={'class': 'form-input'}),
+        }
+
+class ConfiguracionForm(forms.ModelForm):
+    class Meta:
+        model = ConfiguracionSistema
+        fields = ['porcentaje_abono', 'permite_monto_fijo', 'monto_fijo_abono']
+        widgets = {
+            'porcentaje_abono': forms.NumberInput(attrs={'class': 'form-input', 'step': '0.01', 'min': 0, 'max': 100}),
+            'monto_fijo_abono': forms.NumberInput(attrs={'class': 'form-input', 'step': '100', 'min': 0}),
+        }
+

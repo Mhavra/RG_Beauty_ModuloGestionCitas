@@ -1,0 +1,19 @@
+{% extends 'base_gestion.html' %}
+{% block title %}Dashboard - Gestión{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+<div class="stat-row">
+    <div class="stat-card"><span class="stat-icon rose">📅</span><span><small>CITAS HOY</small><strong>{{ citas_hoy }}</strong><em>Agendadas</em></span></div>
+    <div class="stat-card"><span class="stat-icon green">✅</span><span><small>CONFIRMADAS</small><strong>{{ citas_confirmadas }}</strong><em>Con abono</em></span></div>
+    <div class="stat-card"><span class="stat-icon rose">❌</span><span><small>CANCELADAS</small><strong>{{ citas_canceladas }}</strong><em>Liberadas</em></span></div>
+    <div class="stat-card"><span class="stat-icon">💰</span><span><small>ABONOS COBRADOS</small><strong>${{ ingresos_abonos|floatformat:"0" }}</strong><em>Acumulado</em></span></div>
+</div>
+
+<div class="agenda-card">
+    <div class="agenda-toolbar">
+        <h2>Últimas reservas</h2>
+        <a href="{% url 'gestion_citas' %}" class="btn btn-secondary btn-sm">Ver todas</a>
+    </div>
+    {% include 'gestion/_tabla_citas.html' with citas=citas %}
+</div>
+{% endblock %}
