@@ -26,6 +26,13 @@ from django.urls import reverse_lazy, reverse
 from .forms import CitaForm, EditarPerfilForm
 from django.db.models import Sum
 from django.core.paginator import Paginator
+from django.db.models.functions import TruncMonth
+from django.db.models import Q, Count
+from collections import defaultdict
+
+from .models import (
+    Servicio, Usuario, Cita, CitaServicio, Pago, Disponibilidad, BloqueoHorario, ConfiguracionSistema
+)
 
 from .forms import (
     RegistroClienteForm, LoginForm, FiltroReporteForm, CitaForm, EditarPerfilForm, ServicioForm, ProfesionalForm, DisponibilidadForm, BloqueoForm, ConfiguracionForm
@@ -345,39 +352,6 @@ def despachar_notificacion_cita(cita):
     cita.save() 
  
 @login_required
-def admin_dashboard(request):
-    # Permitir solo a los roles autorizados
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
-        messages.error(request, 'No tienes permiso para acceder al panel de administración.')
-        return redirect('reserva_paso1')
-
-    # Traer citas optimizadas para evitar el problema N+1
-    citas = (
-        Cita.objects
-        .select_related('cliente', 'empleado')
-        .prefetch_related('servicios')
-        .order_by('-fecha_hora_cita')
-    )
-    
-    form_reporte = FiltroReporteForm()
-    config = ConfiguracionSistema.objects.first()
-
-    # Calcular algunas estadísticas simples para mostrar en las tarjetas
-    total_citas = citas.count()
-    citas_confirmadas = citas.filter(estado='confirmada').count()
-    citas_canceladas = citas.filter(estado='cancelada').count()
-
-    return render(request, 'admin_dashboard.html', {
-        'citas': citas,
-        'form_reporte': form_reporte,
-        'config': config,
-        'total_citas': total_citas,
-        'citas_confirmadas': citas_confirmadas,
-        'citas_canceladas': citas_canceladas,
-    })
-
-
-@login_required
 def admin_cambiar_estado(request, pk):
     """Vista que permite a la dueña cambiar el estado de una cita desde el panel web."""
     if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
@@ -537,38 +511,66 @@ class CambiarPasswordView(LoginRequiredMixin, PasswordChangeView):
 
 @login_required
 def admin_dashboard(request):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    # 1. Validación de permisos
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder al panel de administración.')
         return redirect('reserva_paso1')
 
+    # 2. Datos para las tarjetas superiores
     citas = (
         Cita.objects
         .select_related('cliente', 'empleado')
         .prefetch_related('servicios')
         .order_by('-fecha_hora_cita')
     )
-    config = ConfiguracionSistema.objects.first()
-
+    
     total_citas = citas.count()
     citas_confirmadas = citas.filter(estado='confirmada').count()
     citas_canceladas = citas.filter(estado='cancelada').count()
     citas_hoy = citas.filter(fecha_hora_cita__date=timezone.localdate()).count()
-    ingresos_abonos = (
-        Pago.objects
-        .filter(estado='completado', tipo_pago='abono')
-        .aggregate(s=Sum('monto'))['s'] or 0
+
+    # 3. Procesamiento de datos para el gráfico EN PYTHON
+    datos_meses = defaultdict(lambda: {'confirmadas': 0, 'canceladas': 0, 'no_asistio': 0})
+    citas_para_grafico = Cita.objects.values('fecha_hora_cita', 'estado')
+
+    for c in citas_para_grafico:
+        if not c['fecha_hora_cita']:
+            continue
+        
+        # Convertimos a hora local de Chile
+        fecha_local = timezone.localtime(c['fecha_hora_cita'])
+        mes_str = fecha_local.strftime('%b %Y').capitalize() # Ej: "Nov 2026"
+        
+        if c['estado'] == 'confirmada':
+            datos_meses[mes_str]['confirmadas'] += 1
+        elif c['estado'] == 'cancelada':
+            datos_meses[mes_str]['canceladas'] += 1
+        elif c['estado'] == 'no_asistio':
+            datos_meses[mes_str]['no_asistio'] += 1
+
+    # 4. Ordenar los meses cronológicamente
+    meses_ordenados = sorted(
+        datos_meses.keys(),
+        key=lambda m: datetime.datetime.strptime(m, '%b %Y')
     )
 
+    chart_data = {
+        'labels': meses_ordenados,
+        'confirmadas': [datos_meses[m]['confirmadas'] for m in meses_ordenados],
+        'canceladas': [datos_meses[m]['canceladas'] for m in meses_ordenados],
+        'no_asistio': [datos_meses[m]['no_asistio'] for m in meses_ordenados],
+    }
+
+    # 5. Renderizado final
     return render(request, 'gestion/dashboard.html', {
         'citas': citas[:10],
-        'config': config,
+        'config': ConfiguracionSistema.objects.first(),
         'total_citas': total_citas,
         'citas_confirmadas': citas_confirmadas,
         'citas_canceladas': citas_canceladas,
         'citas_hoy': citas_hoy,
-        'ingresos_abonos': ingresos_abonos,
+        'chart_data': chart_data,
     })
-
 
 # ---------- Citas: listado con filtros ----------
 @login_required
@@ -609,7 +611,7 @@ def gestion_citas(request):
 # ---------- Servicios ----------
 @login_required
 def gestion_servicios(request):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 

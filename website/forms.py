@@ -188,6 +188,12 @@ class ProfesionalForm(forms.ModelForm):
         help_text='Dejar vacío para no cambiar la contraseña.'
     )
 
+    servicios_asignados = forms.ModelMultipleChoiceField(
+        queryset=Servicio.objects.all(),
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'checkbox-list'}),
+        required=False,
+        label="Servicios que ofrece este profesional"
+    )
     class Meta:
         model = Usuario
         fields = ['username', 'first_name', 'last_name', 'email', 'telefono', 'rol']
@@ -204,7 +210,6 @@ class ProfesionalForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['rol'].choices = [
             ('profesional', 'Profesional'),
-            ('estilista', 'Estilista'),
             ('admin', 'Administradora'),
         ]
 
@@ -217,6 +222,7 @@ class ProfesionalForm(forms.ModelForm):
             user.set_unusable_password()
         if commit:
             user.save()
+            self.save_m2m()
         return user
 
 class DisponibilidadForm(forms.ModelForm):
