@@ -5,64 +5,97 @@
 <section class="step-panel">
     <div class="eyebrow">PASO 2</div>
     <h1>¿Con quién y cuándo?</h1>
-    <p class="lead">Servicio: <strong>{{ servicio.nombre_serv }}</strong> ({{ servicio.duracion_minutos }} min)</p>
     
-    <form method="GET" action="" id="formPaso2">
-        <div class="choice-label">Profesional</div>
-        <div class="pro-grid">
-            {% for prof in profesionales %}
-            <label class="pro-card">
-                <input type="radio" name="profesional_id" value="{{ prof.id }}" class="hidden-input" {% if forloop.first %}checked{% endif %} onchange="actualizarAccion({{ prof.id }})">
-                <span class="avatar">{{ prof.first_name|first }}</span>
-                <span>
-                    <strong>{{ prof.get_full_name|default:prof.username }}</strong>
-                    <small class="text-capitalize">{{ prof.rol }}</small>
-                </span>
-                <span class="radio-dot"></span>
-            </label>
-            {% endfor %}
+    <!-- Resumen visual del servicio -->
+    <div class="appointment-card" style="display:flex; align-items:center; gap:15px; padding: 15px; margin-bottom: 20px;">
+        {% if servicio.imagen %}
+            <img src="{{ servicio.imagen.url }}" alt="{{ servicio.nombre_serv }}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 10px;" />
+        {% else %}
+            <img src="https://images.unsplash.com/photo-1470259078422-826894b933aa?auto=format&fit=crop&w=600&q=85" alt="{{ servicio.nombre_serv }}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 10px;" />
+        {% endif %}
+        <div>
+            <small style="color: var(--muted); font-size: 11px; letter-spacing: 1px; text-transform: uppercase;">Servicio seleccionado</small>
+            <h3 style="margin: 0; font-size: 18px; color: var(--ink);">{{ servicio.nombre_serv }}</h3>
+            <p style="margin: 0; font-size: 13px; color: var(--muted);">{{ servicio.duracion_minutos }} min &middot; ${{ servicio.precio_serv|floatformat:"0" }}</p>
         </div>
+    </div>
 
-        <div class="calendar-card">
-            <div class="calendar-head">
-                <strong>Selecciona la fecha</strong>
+    <!-- CONDICIONAL: Si hay profesionales disponibles mostramos el formulario -->
+    {% if profesionales %}
+        <form method="GET" action="" id="formPaso2">
+            <div class="choice-label">Profesional</div>
+            <div class="pro-grid">
+                {% for prof in profesionales %}
+                <label class="pro-card">
+                    <input type="radio" name="profesional_id" value="{{ prof.id }}" class="hidden-input" {% if forloop.first %}checked{% endif %}>
+                    <span class="avatar">{{ prof.first_name|first }}</span>
+                    <span>
+                        <strong>{{ prof.get_full_name|default:prof.username }}</strong>
+                        <small class="text-capitalize">{{ prof.rol }}</small>
+                    </span>
+                    <span class="radio-dot"></span>
+                </label>
+                {% endfor %}
             </div>
-            <!-- Aquí agregamos el min para bloquear fechas pasadas -->
-            <input type="date" id="fechaCita" name="fecha" value="" min="{{ fecha_minima }}" class="calendar-input-full" required>
-        </div>
 
-        <button type="button" onclick="irAPaso3()" class="btn btn-primary full">
-            Ver Horarios Libres &rarr;
-        </button>
-    </form>
+            <div class="calendar-card">
+                <div class="calendar-head">
+                    <strong>Selecciona la fecha</strong>
+                </div>
+                <input type="date" id="fechaCita" name="fecha" value="" min="{{ fecha_minima }}" class="calendar-input-full" required>
+            </div>
+
+            <button type="button" onclick="irAPaso3()" class="btn btn-primary full">
+                Ver Horarios Libres &rarr;
+            </button>
+        </form>
+
+    <!-- CONDICIONAL: Si NO hay profesionales, mostramos el aviso -->
+    {% else %}
+        <div class="notice-warning" style="text-align: center; padding: 30px;">
+            <strong>No hay profesionales disponibles para este servicio actualmente.</strong><br><br>
+            Por favor, <a href="{% url 'reserva_paso1' %}" style="text-decoration: underline; font-weight: bold;">vuelve a seleccionar otro servicio</a> o contacta a la administración.
+        </div>
+    {% endif %}
 </section>
 
-<!-- AQUÍ ESTÁ EL JAVASCRIPT -->
+<!-- EL SCRIPT SOLO SE EJECUTA SI HAY PROFESIONALES -->
+{% if profesionales %}
 <script>
     let servicioId = {{ servicio.id }};
-    let profSeleccionado = document.querySelector('input[name="profesional_id"]:checked')?.value || "{{ profesionales.0.id }}";
-    
-    function actualizarAccion(profId) {
-        profSeleccionado = profId;
-    }
     
     function irAPaso3() {
-        const input = document.getElementById('fechaCita');
-        const fecha = input.value;
-        const fechaMinima = input.min;
+        const inputFecha = document.getElementById('fechaCita');
+        const fecha = inputFecha.value;
+        const fechaMinima = inputFecha.min;
         
         if (!fecha) {
             alert('Por favor selecciona una fecha');
             return;
         }
         
-        // Validación extra en JS: si intentan enviar una fecha anterior a mañana, se bloquea
         if (fecha < fechaMinima) {
             alert('Debes seleccionar una fecha a partir de mañana. No se permiten fechas pasadas ni el día de hoy.');
             return;
         }
+
+        const radioSeleccionado = document.querySelector('input[name="profesional_id"]:checked');
         
-        window.location.href = `/reserva/paso3/${servicioId}/${profSeleccionado}/?fecha=${fecha}`;
+        if (!radioSeleccionado) {
+            alert('Por favor selecciona un profesional.');
+            return;
+        }
+        
+        const profId = radioSeleccionado.value;
+        
+        if (!profId || profId === "") {
+            alert('Error: El ID del profesional está vacío.');
+            return;
+        }
+
+        window.location.href = `/reserva/paso3/${servicioId}/${profId}/?fecha=${fecha}`;
     }
 </script>
+{% endif %}
+
 {% endblock %}

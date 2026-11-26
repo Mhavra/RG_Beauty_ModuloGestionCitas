@@ -6,7 +6,7 @@
     <form method="POST" class="admin-form-grid">
         {% csrf_token %}
         {% for field in form %}
-        <div class="form-group {% if field.name == 'password' %}full{% endif %}">
+        <div class="form-group {% if field.name == 'password' or field.name == 'servicios_asignados' %}full{% endif %}">
             <label>{{ field.label }}:</label>
             {{ field }}
             {% if field.help_text %}<span class="help-text">{{ field.help_text }}</span>{% endif %}

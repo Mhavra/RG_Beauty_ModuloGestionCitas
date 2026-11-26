@@ -1,6 +1,8 @@
 {% extends 'base_gestion.html' %}
 {% block title %}Dashboard Estadístico - Gestión{% endblock %}
-{% block page_title %}Dashboard Estadístico{% endblock %}
+{% block page_title %}
+    {% if request.user.rol == 'profesional' %}Mis Citas - Profesional{% else %}Dashboard Estadístico{% endif %}
+{% endblock %}
 
 {% block content %}
 
@@ -13,7 +15,7 @@
         <span>
             <small>CITAS HOY</small>
             <strong>{{ citas_hoy }}</strong>
-            <em>Agendadas para hoy</em>
+            <em>{% if request.user.rol == 'profesional' %}Tus citas para hoy{% else %}Agendadas{% endif %}</em>
         </span>
     </div>
     <div class="stat-card">
@@ -21,7 +23,7 @@
         <span>
             <small>CONFIRMADAS</small>
             <strong>{{ citas_confirmadas }}</strong>
-            <em>Histórico total</em>
+            <em>{% if request.user.rol == 'profesional' %}Tus citas{% else %}Histórico{% endif %}</em>
         </span>
     </div>
     <div class="stat-card">
@@ -29,7 +31,7 @@
         <span>
             <small>CANCELADAS</small>
             <strong>{{ citas_canceladas }}</strong>
-            <em>Histórico total</em>
+            <em>{% if request.user.rol == 'profesional' %}Tus cancelaciones{% else %}Histórico{% endif %}</em>
         </span>
     </div>
     <div class="stat-card">
@@ -37,7 +39,7 @@
         <span>
             <small>TOTAL CITAS</small>
             <strong>{{ total_citas }}</strong>
-            <em>En el sistema</em>
+            <em>{% if request.user.rol == 'profesional' %}Tus citas{% else %}Sistema{% endif %}</em>
         </span>
     </div>
 </div>
@@ -45,116 +47,157 @@
 <!-- ========================================== -->
 <!-- GRÁFICO DINÁMICO (CHART.JS)                -->
 <!-- ========================================== -->
-<div class="agenda-card" style="padding: 24px; margin-bottom: 24px;">
-    <h3 style="margin-bottom: 20px; font-family: 'Playfair Display', serif; font-size: 20px;">
-        Comparativa Mensual de Citas
-    </h3>
+<div class="agenda-card report-section-card">
     
-    <!-- Validación: Si hay datos, mostramos el gráfico -->
+    <div class="report-header-block">
+        <h3 class="report-title">
+            {% if request.user.rol == 'profesional' %}Mis Citas (Comparativa){% else %}Comparativa de Citas{% endif %}
+        </h3>
+        
+        <!-- Contenedor de los controles (Select + Botones) -->
+        <div class="report-controls">
+            <select id="filtroPeriodo" class="report-select" onchange="cambiarPeriodo()">
+                <option value="mes">Histórico (Por Mes)</option>
+                <option value="semana">Esta Semana (Por Día)</option>
+                <option value="rango">Rango personalizado</option>
+            </select>
+            
+            <a href="#" class="btn btn-secondary btn-sm" onclick="descargarReporte('excel', event)">📥 Excel</a>
+            <a href="#" class="btn btn-secondary btn-sm" onclick="descargarReporte('pdf', event)">📄 PDF</a>
+        </div>
+    </div>
+
+    <!-- Contenedor de Fechas (Oculto por defecto) -->
+    <div id="contenedorRango" class="report-date-range">
+        <div class="report-date-group">
+            <label class="form-label-sm">Desde:</label>
+            <input type="date" id="fechaDesde" class="report-date-input">
+        </div>
+        <div class="report-date-group">
+            <label class="form-label-sm">Hasta:</label>
+            <input type="date" id="fechaHasta" class="report-date-input">
+        </div>
+        <button type="button" onclick="aplicarRango()" class="btn btn-primary report-btn-apply">Aplicar Filtro</button>
+    </div>
+
+    <!-- Canvas del Gráfico -->
     {% if chart_data.labels %}
-        <div style="position: relative; height: 350px; width: 100%;">
+        <div class="report-chart-container">
             <canvas id="graficoCitas"></canvas>
         </div>
     {% else %}
         <div class="empty-state-table">
-            Aún no hay suficientes datos para generar el gráfico.
+            Aún no hay datos para generar el gráfico.
         </div>
     {% endif %}
 </div>
 
 <!-- ========================================== -->
-<!-- TABLA DE RESERVAS RECIENTES                -->
+<!-- TABLA DE ÚLTIMAS RESERVAS                  -->
 <!-- ========================================== -->
 <div class="agenda-card">
-    <div class="agenda-toolbar" style="padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="margin: 0; font-size: 18px;">Últimas reservas</h2>
+    <div class="report-header-block" style="padding: 16px 20px; border-bottom: 1px solid var(--line); margin: 0;">
+        <h2 style="margin: 0; font-size: 18px;">
+            {% if request.user.rol == 'profesional' %}Mis próximas reservas{% else %}Últimas reservas{% endif %}
+        </h2>
         <a href="{% url 'gestion_citas' %}" class="btn btn-secondary btn-sm">Ver todas</a>
     </div>
     
-    <!-- Reutilizamos el parcial que ya tienes creado -->
     {% include 'gestion/_tabla_citas.html' with citas=citas %}
 </div>
 
 <!-- ========================================== -->
-<!-- SCRIPT DE CHART.JS                         -->
+<!-- SCRIPT DE CHART.JS Y LÓGICA DE FILTROS     -->
 <!-- ========================================== -->
-<!-- Cargamos la librería desde el CDN oficial -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Verificamos que el canvas exista en la página (solo si hay datos)
-    const canvasElement = document.getElementById('graficoCitas');
-    
-    if (canvasElement) {
-        // Recibimos los datos desde Django. El filtro |safe es crucial para que JS lo lea.
-        const dataFromDjango = {{ chart_data|safe }};
-        const ctx = canvasElement.getContext('2d');
+    let miGrafico = null;
 
-        new Chart(ctx, {
-            type: 'bar', // Tipo de gráfico: 'bar' (barras) o 'line' (líneas)
+    function renderizarGrafico(data) {
+        const canvasElement = document.getElementById('graficoCitas');
+        if (!canvasElement) return;
+        const ctx = canvasElement.getContext('2d');
+        
+        if (miGrafico) miGrafico.destroy();
+
+        miGrafico = new Chart(ctx, {
+            type: 'bar',
             data: {
-                labels: dataFromDjango.labels,
+                labels: data.labels,
                 datasets: [
-                    {
-                        label: 'Confirmadas',
-                        data: dataFromDjango.confirmadas,
-                        backgroundColor: '#4f9a73', // Verde (Éxito)
-                        borderRadius: 4
-                    },
-                    {
-                        label: 'Canceladas',
-                        data: dataFromDjango.canceladas,
-                        backgroundColor: '#b95151', // Rojo (Alerta)
-                        borderRadius: 4
-                    },
-                    {
-                        label: 'No Asistieron',
-                        data: dataFromDjango.no_asistio,
-                        backgroundColor: '#d4af37', // Dorado (Pérdida)
-                        borderRadius: 4
-                    }
+                    { label: 'Confirmadas', data: data.confirmadas, backgroundColor: '#4f9a73', borderRadius: 4 },
+                    { label: 'Canceladas', data: data.canceladas, backgroundColor: '#b95151', borderRadius: 4 },
+                    { label: 'No Asistieron', data: data.no_asistio, backgroundColor: '#d4af37', borderRadius: 4 }
                 ]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false, // Permite que se adapte al alto del div contenedor
+                maintainAspectRatio: false,
                 plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            font: {
-                                family: "'DM Sans', sans-serif",
-                                size: 13
-                            },
-                            usePointStyle: true,
-                        }
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        backgroundColor: 'rgba(34, 34, 34, 0.9)',
-                        titleFont: { family: "'DM Sans', sans-serif", size: 14 },
-                        bodyFont: { family: "'DM Sans', sans-serif", size: 13 },
-                        padding: 12,
-                        cornerRadius: 8,
-                    }
+                    legend: { position: 'top', labels: { font: { family: "'DM Sans', sans-serif", size: 13 }, usePointStyle: true } },
+                    tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(34, 34, 34, 0.9)' }
                 },
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { 
-                            stepSize: 1, // Fuerza a que los números en el eje Y sean enteros
-                            color: '#716c70'
-                        },
-                        grid: { color: '#ebe7e8' }
-                    },
-                    x: {
-                        ticks: { color: '#716c70' },
-                        grid: { display: false }
-                    }
+                    y: { beginAtZero: true, ticks: { stepSize: 1, color: '#716c70' }, grid: { color: '#ebe7e8' } },
+                    x: { ticks: { color: '#716c70' }, grid: { display: false } }
                 }
             }
         });
     }
+
+    function cargarDatosGrafico(url) {
+        fetch(url, { cache: 'no-store' })
+            .then(response => response.json())
+            .then(data => renderizarGrafico(data))
+            .catch(error => console.error('Error:', error));
+    }
+
+    function cambiarPeriodo() {
+        const periodo = document.getElementById('filtroPeriodo').value;
+        const contenedorRango = document.getElementById('contenedorRango');
+        
+        if (periodo === 'rango') {
+            contenedorRango.classList.add('active-dates');
+        } else {
+            contenedorRango.classList.remove('active-dates');
+            document.getElementById('fechaDesde').value = '';
+            document.getElementById('fechaHasta').value = '';
+            cargarDatosGrafico(`/api/datos-grafico/?periodo=${periodo}&nocache=${Math.random()}`);
+        }
+    }
+
+    function aplicarRango() {
+        const desde = document.getElementById('fechaDesde').value;
+        const hasta = document.getElementById('fechaHasta').value;
+        
+        if (!desde || !hasta) {
+            alert('Por favor, selecciona ambas fechas.');
+            return;
+        }
+        cargarDatosGrafico(`/api/datos-grafico/?periodo=rango&desde=${desde}&hasta=${hasta}&nocache=${Math.random()}`);
+    }
+
+    function descargarReporte(tipo, event) {
+        event.preventDefault();
+        const periodo = document.getElementById('filtroPeriodo').value;
+        const desde = document.getElementById('fechaDesde').value;
+        const hasta = document.getElementById('fechaHasta').value;
+        
+        let url = `/gestion/descargar/${tipo}/?periodo=${periodo}`;
+        
+        if (periodo === 'rango') {
+            if (!desde || !hasta) {
+                alert('Por favor, selecciona ambas fechas antes de descargar.');
+                return;
+            }
+            url += `&desde=${desde}&hasta=${hasta}`;
+        }
+        window.location.href = url;
+    }
+
+    // Renderizado inicial con los datos que envía Django
+    const datosIniciales = {{ chart_data|safe }};
+    renderizarGrafico(datosIniciales);
 </script>
 
 {% endblock %}

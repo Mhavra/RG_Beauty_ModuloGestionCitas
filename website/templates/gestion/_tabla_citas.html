@@ -1,7 +1,15 @@
 <div class="table-responsive">
 <table class="data-table">
     <thead>
-        <tr><th>ID</th><th>Cliente</th><th>Profesional</th><th>Fecha/Hora</th><th>Abono</th><th>Estado</th><th>Acciones</th></tr>
+        <tr>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Profesional</th>
+            <th>Fecha/Hora</th>
+            <th>Abono</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
     </thead>
     <tbody>
     {% for c in citas %}
@@ -17,18 +25,24 @@
                 </span>
             </td>
             <td>
-                <form method="POST" action="{% url 'admin_cambiar_estado' c.pk %}" style="display:flex; gap:4px;">
-                    {% csrf_token %}
-                    {% if c.estado != 'completada' %}
-                        <button name="estado" value="completada" class="btn btn-sm" style="background:#edf8f2;color:#2d6a4f;border:1px solid #a6d8bd;" title="Completada">✔️</button>
-                    {% endif %}
-                    {% if c.estado != 'cancelada' %}
-                        <button name="estado" value="cancelada" class="btn btn-sm" style="background:#fff1f1;color:#8a2c2c;border:1px solid #f3cdcd;" title="Cancelar">✖️</button>
-                    {% endif %}
-                    {% if c.estado != 'no_asistio' %}
-                        <button name="estado" value="no_asistio" class="btn btn-sm" style="background:#f8f9fa;color:#716c70;border:1px solid #ebe7e8;" title="No asistió">🚫</button>
-                    {% endif %}
-                </form>
+                <!-- Si la cita está en un estado final, solo se permite ocultar del dashboard -->
+                {% if c.estado == 'cancelada' or c.estado == 'completada' or c.estado == 'no_asistio' %}
+                    <form method="POST" action="{% url 'admin_cambiar_estado' c.pk %}" class="action-form">
+                        {% csrf_token %}
+                        <button type="submit" name="estado" value="eliminada" class="btn btn-sm btn-action-delete" title="Ocultar del dashboard" onclick="return confirm('¿Seguro que deseas ocultar esta cita del panel rápido? Seguirá visible en la página general de Citas.');">
+                            🗑️
+                        </button>
+                    </form>
+                
+                <!-- Si la cita está activa, se muestran las opciones normales -->
+                {% else %}
+                    <form method="POST" action="{% url 'admin_cambiar_estado' c.pk %}" class="action-form">
+                        {% csrf_token %}
+                        <button type="submit" name="estado" value="completada" class="btn btn-sm btn-action-complete" title="Marcar como Completada">✔️</button>
+                        <button type="submit" name="estado" value="no_asistio" class="btn btn-sm btn-action-no-show" title="No Asistió">🚫</button>
+                        <button type="submit" name="estado" value="cancelada" class="btn btn-sm btn-action-cancel" title="Cancelar Cita">✖️</button>
+                    </form>
+                {% endif %}
             </td>
         </tr>
     {% empty %}

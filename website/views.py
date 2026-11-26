@@ -29,6 +29,14 @@ from django.core.paginator import Paginator
 from django.db.models.functions import TruncMonth
 from django.db.models import Q, Count
 from collections import defaultdict
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
+
+
 
 from .models import (
     Servicio, Usuario, Cita, CitaServicio, Pago, Disponibilidad, BloqueoHorario, ConfiguracionSistema
@@ -175,9 +183,13 @@ def reserva_paso1_servicios(request):
 @login_required
 def reserva_paso2_fecha(request, servicio_id): 
     servicio = get_object_or_404(Servicio, pk=servicio_id) 
-    profesionales = Usuario.objects.filter(rol__in=['admin', 'profesional']) 
     
-    # Calcular fecha mínima: mañana
+    # Traemos a los profesionales que ofrecen el servicio
+    profesionales = Usuario.objects.filter(
+        rol__in=['admin', 'profesional'],
+        servicios_asignados=servicio
+    ).distinct()
+    
     hoy = timezone.localdate()
     fecha_minima = hoy + datetime.timedelta(days=1)
     
@@ -192,6 +204,11 @@ def reserva_paso3_horarios(request, servicio_id, empleado_id):
     servicio = get_object_or_404(Servicio, pk=servicio_id) 
     empleado = get_object_or_404(Usuario, pk=empleado_id) 
     
+    # Validación de seguridad: comprobar que el empleado realmente ofrece este servicio
+    if not empleado.servicios_asignados.filter(id=servicio.id).exists():
+        messages.error(request, f'El profesional {empleado.get_full_name()} no ofrece el servicio "{servicio.nombre_serv}". Por favor, elige otro profesional.')
+        return redirect('reserva_paso2', servicio_id=servicio_id)
+
     # 1. Validar que la fecha venga en la URL
     fecha_str = request.GET.get('fecha')
     if not fecha_str:
@@ -353,18 +370,23 @@ def despachar_notificacion_cita(cita):
  
 @login_required
 def admin_cambiar_estado(request, pk):
-    """Vista que permite a la dueña cambiar el estado de una cita desde el panel web."""
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
-        raise PermissionDenied('No tienes permiso para realizar esta acción.')
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
+        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        return redirect('reserva_paso1')
 
     cita = get_object_or_404(Cita, pk=pk)
     
     if request.method == 'POST':
         nuevo_estado = request.POST.get('estado')
         
-        # Validar que el estado enviado sea uno de los permitidos en el modelo
+        # Si el estado es "eliminada", ocultamos la cita del dashboard sin borrarla
+        if nuevo_estado == 'eliminada':
+            cita.oculta_dashboard = True
+            cita.save()
+            messages.success(request, f'Cita #{cita.id} ocultada del panel rápido (sigue disponible en la gestión de Citas).')
+            return redirect(request.META.get('HTTP_REFERER', 'admin_dashboard'))
+            
         estados_validos = [opcion[0] for opcion in Cita.ESTADOS_CITA]
-        
         if nuevo_estado in estados_validos:
             cita.estado = nuevo_estado
             cita.save()
@@ -372,7 +394,7 @@ def admin_cambiar_estado(request, pk):
         else:
             messages.error(request, 'El estado enviado no es válido.')
             
-    return redirect('admin_dashboard')
+    return redirect(request.META.get('HTTP_REFERER', 'admin_dashboard'))
 
 def registro(request):
     if request.method == 'POST':
@@ -511,59 +533,41 @@ class CambiarPasswordView(LoginRequiredMixin, PasswordChangeView):
 
 @login_required
 def admin_dashboard(request):
-    # 1. Validación de permisos
     if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder al panel de administración.')
         return redirect('reserva_paso1')
 
-    # 2. Datos para las tarjetas superiores
-    citas = (
+    # 1. Base de la consulta
+    citas_qs = (
         Cita.objects
+        .filter(oculta_dashboard=False)
         .select_related('cliente', 'empleado')
         .prefetch_related('servicios')
         .order_by('-fecha_hora_cita')
     )
-    
-    total_citas = citas.count()
-    citas_confirmadas = citas.filter(estado='confirmada').count()
-    citas_canceladas = citas.filter(estado='cancelada').count()
-    citas_hoy = citas.filter(fecha_hora_cita__date=timezone.localdate()).count()
 
-    # 3. Procesamiento de datos para el gráfico EN PYTHON
-    datos_meses = defaultdict(lambda: {'confirmadas': 0, 'canceladas': 0, 'no_asistio': 0})
-    citas_para_grafico = Cita.objects.values('fecha_hora_cita', 'estado')
-
-    for c in citas_para_grafico:
-        if not c['fecha_hora_cita']:
-            continue
+    # 2. Filtro por rol: Si es profesional o admin (pero no superuser), solo ve sus propias citas
+    if not request.user.is_superuser and request.user.rol in ['profesional', 'admin']:
+        citas_qs = citas_qs.filter(empleado=request.user)
         
-        # Convertimos a hora local de Chile
-        fecha_local = timezone.localtime(c['fecha_hora_cita'])
-        mes_str = fecha_local.strftime('%b %Y').capitalize() # Ej: "Nov 2026"
-        
-        if c['estado'] == 'confirmada':
-            datos_meses[mes_str]['confirmadas'] += 1
-        elif c['estado'] == 'cancelada':
-            datos_meses[mes_str]['canceladas'] += 1
-        elif c['estado'] == 'no_asistio':
-            datos_meses[mes_str]['no_asistio'] += 1
+        # También filtramos los contadores para que reflejen solo sus citas
+        base_count = Cita.objects.filter(oculta_dashboard=False, empleado=request.user)
+        total_citas = base_count.count()
+        citas_confirmadas = base_count.filter(estado='confirmada').count()
+        citas_canceladas = base_count.filter(estado='cancelada').count()
+        citas_hoy = base_count.filter(fecha_hora_cita__date=timezone.localdate()).count()
+    else:
+        # Si es superuser, ve todo el sistema
+        total_citas = Cita.objects.filter(oculta_dashboard=False).count()
+        citas_confirmadas = Cita.objects.filter(oculta_dashboard=False, estado='confirmada').count()
+        citas_canceladas = Cita.objects.filter(oculta_dashboard=False, estado='cancelada').count()
+        citas_hoy = Cita.objects.filter(oculta_dashboard=False, fecha_hora_cita__date=timezone.localdate()).count()
 
-    # 4. Ordenar los meses cronológicamente
-    meses_ordenados = sorted(
-        datos_meses.keys(),
-        key=lambda m: datetime.datetime.strptime(m, '%b %Y')
-    )
+    # 3. Datos del gráfico (si es profesional, el gráfico también debería ser solo de sus citas)
+    chart_data = obtener_datos_grafico(agrupacion='mes')
 
-    chart_data = {
-        'labels': meses_ordenados,
-        'confirmadas': [datos_meses[m]['confirmadas'] for m in meses_ordenados],
-        'canceladas': [datos_meses[m]['canceladas'] for m in meses_ordenados],
-        'no_asistio': [datos_meses[m]['no_asistio'] for m in meses_ordenados],
-    }
-
-    # 5. Renderizado final
     return render(request, 'gestion/dashboard.html', {
-        'citas': citas[:10],
+        'citas': citas_qs[:10],
         'config': ConfiguracionSistema.objects.first(),
         'total_citas': total_citas,
         'citas_confirmadas': citas_confirmadas,
@@ -575,7 +579,7 @@ def admin_dashboard(request):
 # ---------- Citas: listado con filtros ----------
 @login_required
 def gestion_citas(request):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -585,6 +589,10 @@ def gestion_citas(request):
         .prefetch_related('servicios')
         .order_by('-fecha_hora_cita')
     )
+
+    # FILTRO CLAVE: Si es profesional, solo ve sus propias citas
+    if not request.user.is_superuser and request.user.rol == 'profesional':
+        qs = qs.filter(empleado=request.user)
 
     q = request.GET.get('q', '').strip()
     if q:
@@ -605,23 +613,24 @@ def gestion_citas(request):
         'q': q,
         'estado': estado,
         'estados': Cita.ESTADOS_CITA,
+        'config': ConfiguracionSistema.objects.first(),
     })
-
 
 # ---------- Servicios ----------
 @login_required
 def gestion_servicios(request):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
+    if not (request.user.is_superuser or request.user.rol == 'admin'):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
-        return redirect('reserva_paso1')
-
+        return redirect('admin_dashboard')
     servicios = Servicio.objects.all().order_by('nombre_serv')
-    return render(request, 'gestion/servicios.html', {'servicios': servicios})
-
+    return render(request, 'gestion/servicios.html', {
+        'servicios': servicios,
+        'config': ConfiguracionSistema.objects.first(),
+    })
 
 @login_required
 def gestion_servicio_form(request, pk=None):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -636,12 +645,15 @@ def gestion_servicio_form(request, pk=None):
     if request.method == 'POST':
         messages.error(request, 'Revisa los datos del formulario.')
 
-    return render(request, 'gestion/servicio_form.html', {'form': form, 'inst': inst})
-
+    return render(request, 'gestion/servicio_form.html', {
+        'form': form, 
+        'inst': inst,
+        'config': ConfiguracionSistema.objects.first(),
+    })
 
 @login_required
 def gestion_servicio_eliminar(request, pk):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -656,27 +668,31 @@ def gestion_servicio_eliminar(request, pk):
         'obj': servicio,
         'titulo': f'Eliminar servicio: {servicio.nombre_serv}',
         'cancel_url': 'gestion_servicios',
+        'config': ConfiguracionSistema.objects.first(),
     })
 
 
 # ---------- Profesionales ----------
 @login_required
 def gestion_profesionales(request):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
     profesionales = (
         Usuario.objects
-        .filter(rol__in=['profesional', 'admin', 'estilista'])
+        .filter(rol__in=['profesional', 'admin'])
         .order_by('first_name')
     )
-    return render(request, 'gestion/profesionales.html', {'profesionales': profesionales})
-
+    
+    return render(request, 'gestion/profesionales.html', {
+        'profesionales': profesionales,
+        'config': ConfiguracionSistema.objects.first(),
+    })
 
 @login_required
 def gestion_profesional_form(request, pk=None):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -691,13 +707,16 @@ def gestion_profesional_form(request, pk=None):
     if request.method == 'POST':
         messages.error(request, 'Revisa los datos del formulario.')
 
-    return render(request, 'gestion/profesional_form.html', {'form': form, 'inst': inst})
-
+    return render(request, 'gestion/profesional_form.html', {
+        'form': form, 
+        'inst': inst,
+        'config': ConfiguracionSistema.objects.first(),
+    })
 
 # ---------- Disponibilidad ----------
 @login_required
 def gestion_disponibilidad(request):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -706,12 +725,14 @@ def gestion_disponibilidad(request):
         .select_related('empleado')
         .order_by('empleado__first_name', 'dia_semana', 'hora_inicio')
     )
-    return render(request, 'gestion/disponibilidad.html', {'items': items})
-
+    return render(request, 'gestion/disponibilidad.html', {
+        'items': items,
+        'config': ConfiguracionSistema.objects.first(),
+    })
 
 @login_required
 def gestion_disponibilidad_form(request, pk=None):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -726,12 +747,15 @@ def gestion_disponibilidad_form(request, pk=None):
     if request.method == 'POST':
         messages.error(request, 'Revisa los datos del formulario.')
 
-    return render(request, 'gestion/disponibilidad_form.html', {'form': form, 'inst': inst})
-
+    return render(request, 'gestion/disponibilidad_form.html', {
+        'form': form, 
+        'inst': inst,
+        'config': ConfiguracionSistema.objects.first(),
+    })
 
 @login_required
 def gestion_disponibilidad_eliminar(request, pk):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -746,13 +770,14 @@ def gestion_disponibilidad_eliminar(request, pk):
         'obj': item,
         'titulo': 'Eliminar disponibilidad',
         'cancel_url': 'gestion_disponibilidad',
+        'config': ConfiguracionSistema.objects.first(),
     })
 
 
 # ---------- Bloqueos ----------
 @login_required
 def gestion_bloqueos(request):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -761,12 +786,14 @@ def gestion_bloqueos(request):
         .select_related('empleado')
         .order_by('-fecha_inicio')
     )
-    return render(request, 'gestion/bloqueos.html', {'items': items})
-
+    return render(request, 'gestion/bloqueos.html', {
+        'items': items,
+        'config': ConfiguracionSistema.objects.first(),
+    })
 
 @login_required
 def gestion_bloqueo_form(request, pk=None):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -781,12 +808,15 @@ def gestion_bloqueo_form(request, pk=None):
     if request.method == 'POST':
         messages.error(request, 'Revisa los datos del formulario.')
 
-    return render(request, 'gestion/bloqueo_form.html', {'form': form, 'inst': inst})
-
+    return render(request, 'gestion/bloqueo_form.html', {
+        'form': form, 
+        'inst': inst,
+        'config': ConfiguracionSistema.objects.first(),
+    })
 
 @login_required
 def gestion_bloqueo_eliminar(request, pk):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -801,34 +831,29 @@ def gestion_bloqueo_eliminar(request, pk):
         'obj': item,
         'titulo': 'Eliminar bloqueo',
         'cancel_url': 'gestion_bloqueos',
+        'config': ConfiguracionSistema.objects.first(),
     })
 
 
 # ---------- Pagos ----------
 @login_required
 def gestion_pagos(request):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol == 'admin'):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
-        return redirect('reserva_paso1')
-
-    qs = (
-        Pago.objects
-        .select_related('cita', 'cliente')
-        .order_by('-fecha_pago')
-    )
+        return redirect('admin_dashboard')
+    qs = Pago.objects.select_related('cita', 'cliente').order_by('-fecha_pago')
     page_obj = Paginator(qs, 30).get_page(request.GET.get('page'))
     total = qs.aggregate(t=Sum('monto'))['t'] or 0
-
     return render(request, 'gestion/pagos.html', {
         'page_obj': page_obj,
         'total': total,
+        'config': ConfiguracionSistema.objects.first(),
     })
-
 
 # ---------- Configuración ----------
 @login_required
 def gestion_configuracion(request):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol == 'admin'):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -847,3 +872,233 @@ def gestion_configuracion(request):
         messages.error(request, 'Revisa los datos del formulario.')
 
     return render(request, 'gestion/configuracion.html', {'form': form, 'config': config})
+
+def obtener_datos_grafico(fecha_inicio=None, fecha_fin=None, agrupacion='mes'):
+    citas = Cita.objects.all()
+    
+    if fecha_inicio and fecha_fin:
+        inicio_dt = datetime.datetime.combine(fecha_inicio, datetime.time.min)
+        fin_dt = datetime.datetime.combine(fecha_fin, datetime.time.max)
+        
+        inicio_dt = timezone.make_aware(inicio_dt, timezone.get_current_timezone())
+        fin_dt = timezone.make_aware(fin_dt, timezone.get_current_timezone())
+        
+        citas = citas.filter(fecha_hora_cita__range=[inicio_dt, fin_dt])
+
+    datos_agrupados = defaultdict(lambda: {'confirmadas': 0, 'canceladas': 0, 'no_asistio': 0})
+
+    for c in citas.values('fecha_hora_cita', 'estado'):
+        if not c['fecha_hora_cita']:
+            continue
+        
+        fecha_local = timezone.localtime(c['fecha_hora_cita'])
+        
+        if agrupacion == 'dia':
+            clave = fecha_local.date()
+        else:
+            clave = fecha_local.date().replace(day=1)
+        
+        if c['estado'] == 'confirmada':
+            datos_agrupados[clave]['confirmadas'] += 1
+        elif c['estado'] == 'cancelada':
+            datos_agrupados[clave]['canceladas'] += 1
+        elif c['estado'] == 'no_asistio':
+            datos_agrupados[clave]['no_asistio'] += 1
+
+    claves_ordenadas = sorted(datos_agrupados.keys())
+
+    labels = []
+    for k in claves_ordenadas:
+        if agrupacion == 'dia':
+            labels.append(k.strftime('%d %b').capitalize())
+        else:
+            labels.append(k.strftime('%b %Y').capitalize())
+
+    return {
+        'labels': labels,
+        'confirmadas': [datos_agrupados[k]['confirmadas'] for k in claves_ordenadas],
+        'canceladas': [datos_agrupados[k]['canceladas'] for k in claves_ordenadas],
+        'no_asistio': [datos_agrupados[k]['no_asistio'] for k in claves_ordenadas],
+    }
+
+@login_required
+def api_datos_grafico(request):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    periodo = request.GET.get('periodo', 'mes')
+    desde_str = request.GET.get('desde')
+    hasta_str = request.GET.get('hasta')
+
+    hoy = timezone.localdate()
+
+    if periodo == 'semana':
+        fecha_inicio = hoy - datetime.timedelta(days=7)
+        fecha_fin = hoy + datetime.timedelta(days=7) # Mostramos la semana pasada y la próxima
+        agrupacion = 'dia'
+    elif periodo == 'mes':
+        # Aquí forzamos a que sea agrupación mensual (Histórico completo)
+        fecha_inicio = None
+        fecha_fin = None
+        agrupacion = 'mes'
+    elif periodo == 'rango' and desde_str and hasta_str:
+        fecha_inicio = datetime.datetime.strptime(desde_str, '%Y-%m-%d').date()
+        fecha_fin = datetime.datetime.strptime(hasta_str, '%Y-%m-%d').date()
+        if (fecha_fin - fecha_inicio).days > 60:
+            agrupacion = 'mes'
+        else:
+            agrupacion = 'dia'
+    else:
+        fecha_inicio = None
+        fecha_fin = None
+        agrupacion = 'mes'
+
+    data = obtener_datos_grafico(fecha_inicio, fecha_fin, agrupacion)
+    return JsonResponse(data)
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
+from django.http import HttpResponse
+from django.utils import timezone
+import datetime
+
+@login_required
+def descargar_reporte_excel(request):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
+        return redirect('reserva_paso1')
+
+    periodo = request.GET.get('periodo', 'mes')
+    desde_str = request.GET.get('desde')
+    hasta_str = request.GET.get('hasta')
+
+    hoy = timezone.localdate()
+    citas = Cita.objects.all()
+
+    # Misma lógica que el gráfico
+    if periodo == 'semana':
+        fecha_inicio = hoy - datetime.timedelta(days=7)
+        fecha_fin = hoy + datetime.timedelta(days=7)
+        inicio_dt = timezone.make_aware(datetime.datetime.combine(fecha_inicio, datetime.time.min))
+        fin_dt = timezone.make_aware(datetime.datetime.combine(fecha_fin, datetime.time.max))
+        citas = citas.filter(fecha_hora_cita__range=[inicio_dt, fin_dt])
+        
+    elif periodo == 'rango' and desde_str and hasta_str:
+        fecha_inicio = datetime.datetime.strptime(desde_str, '%Y-%m-%d').date()
+        fecha_fin = datetime.datetime.strptime(hasta_str, '%Y-%m-%d').date()
+        inicio_dt = timezone.make_aware(datetime.datetime.combine(fecha_inicio, datetime.time.min))
+        fin_dt = timezone.make_aware(datetime.datetime.combine(fecha_fin, datetime.time.max))
+        citas = citas.filter(fecha_hora_cita__range=[inicio_dt, fin_dt])
+
+    citas = citas.select_related('cliente', 'empleado').order_by('-fecha_hora_cita')
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Reporte de Citas"
+
+    headers = ['ID', 'Cliente', 'Profesional', 'Fecha y Hora', 'Estado', 'Monto Abono']
+    ws.append(headers)
+    for cell in ws[1]:
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(start_color="D98F96", end_color="D98F96", fill_type="solid")
+        cell.alignment = Alignment(horizontal="center")
+
+    for c in citas:
+        ws.append([
+            c.id,
+            c.cliente.get_full_name() or c.cliente.username,
+            c.empleado.get_full_name() or c.empleado.username,
+            timezone.localtime(c.fecha_hora_cita).strftime('%d/%m/%Y %H:%M'),
+            c.get_estado_display(),
+            float(c.monto_abono)
+        ])
+
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column_letter
+        for cell in col:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[column].width = adjusted_width
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="reporte_citas.xlsx"'
+    wb.save(response)
+    return response
+
+# --------------------------------------------------
+# VISTA PARA DESCARGAR PDF
+# --------------------------------------------------
+@login_required
+def descargar_reporte_pdf(request):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
+        return redirect('reserva_paso1')
+
+    periodo = request.GET.get('periodo', 'mes')
+    desde_str = request.GET.get('desde')
+    hasta_str = request.GET.get('hasta')
+
+    hoy = timezone.localdate()
+    citas = Cita.objects.all()
+
+    # Misma lógica que el gráfico
+    if periodo == 'semana':
+        fecha_inicio = hoy - datetime.timedelta(days=7)
+        fecha_fin = hoy + datetime.timedelta(days=7)
+        inicio_dt = timezone.make_aware(datetime.datetime.combine(fecha_inicio, datetime.time.min))
+        fin_dt = timezone.make_aware(datetime.datetime.combine(fecha_fin, datetime.time.max))
+        citas = citas.filter(fecha_hora_cita__range=[inicio_dt, fin_dt])
+        
+    elif periodo == 'rango' and desde_str and hasta_str:
+        fecha_inicio = datetime.datetime.strptime(desde_str, '%Y-%m-%d').date()
+        fecha_fin = datetime.datetime.strptime(hasta_str, '%Y-%m-%d').date()
+        inicio_dt = timezone.make_aware(datetime.datetime.combine(fecha_inicio, datetime.time.min))
+        fin_dt = timezone.make_aware(datetime.datetime.combine(fecha_fin, datetime.time.max))
+        citas = citas.filter(fecha_hora_cita__range=[inicio_dt, fin_dt])
+
+    citas = citas.select_related('cliente', 'empleado').order_by('-fecha_hora_cita')
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="reporte_citas.pdf"'
+
+    doc = SimpleDocTemplate(response, pagesize=letter)
+    elements = []
+    styles = getSampleStyleSheet()
+
+    titulo = Paragraph("Reporte de Citas - RG Beauty Spa", styles['Title'])
+    elements.append(titulo)
+    elements.append(Paragraph(f"Generado el: {timezone.localtime(timezone.now()).strftime('%d/%m/%Y %H:%M')}", styles['Normal']))
+    elements.append(Paragraph("<br/><br/>", styles['Normal']))
+
+    data = [['ID', 'Cliente', 'Profesional', 'Fecha/Hora', 'Estado', 'Abono']]
+    for c in citas:
+        data.append([
+            str(c.id),
+            c.cliente.get_full_name() or c.cliente.username,
+            c.empleado.get_full_name() or c.empleado.username,
+            timezone.localtime(c.fecha_hora_cita).strftime('%d/%m/%Y %H:%M'),
+            c.get_estado_display(),
+            f"${c.monto_abono:,.0f}"
+        ])
+
+    table = Table(data)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#D98F96")),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor("#FFF4F4")),
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor("#EBE7E8")),
+    ]))
+
+    elements.append(table)
+    doc.build(elements)
+    return response
