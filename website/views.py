@@ -597,6 +597,7 @@ def gestion_citas(request):
         'q': q,
         'estado': estado,
         'estados': Cita.ESTADOS_CITA,
+        'config': ConfiguracionSistema.objects.first(),
     })
 
 # ---------- Servicios ----------
@@ -607,12 +608,15 @@ def gestion_servicios(request):
         return redirect('reserva_paso1')
 
     servicios = Servicio.objects.all().order_by('nombre_serv')
-    return render(request, 'gestion/servicios.html', {'servicios': servicios})
-
+    
+    return render(request, 'gestion/servicios.html', {
+        'servicios': servicios,
+        'config': ConfiguracionSistema.objects.first(), # <-- ESTA LÍNEA FALTABA
+    })
 
 @login_required
 def gestion_servicio_form(request, pk=None):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -627,12 +631,15 @@ def gestion_servicio_form(request, pk=None):
     if request.method == 'POST':
         messages.error(request, 'Revisa los datos del formulario.')
 
-    return render(request, 'gestion/servicio_form.html', {'form': form, 'inst': inst})
-
+    return render(request, 'gestion/servicio_form.html', {
+        'form': form, 
+        'inst': inst,
+        'config': ConfiguracionSistema.objects.first(),
+    })
 
 @login_required
 def gestion_servicio_eliminar(request, pk):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -647,27 +654,31 @@ def gestion_servicio_eliminar(request, pk):
         'obj': servicio,
         'titulo': f'Eliminar servicio: {servicio.nombre_serv}',
         'cancel_url': 'gestion_servicios',
+        'config': ConfiguracionSistema.objects.first(),
     })
 
 
 # ---------- Profesionales ----------
 @login_required
 def gestion_profesionales(request):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
     profesionales = (
         Usuario.objects
-        .filter(rol__in=['profesional', 'admin', 'estilista'])
+        .filter(rol__in=['profesional', 'admin'])
         .order_by('first_name')
     )
-    return render(request, 'gestion/profesionales.html', {'profesionales': profesionales})
-
+    
+    return render(request, 'gestion/profesionales.html', {
+        'profesionales': profesionales,
+        'config': ConfiguracionSistema.objects.first(),
+    })
 
 @login_required
 def gestion_profesional_form(request, pk=None):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -682,13 +693,16 @@ def gestion_profesional_form(request, pk=None):
     if request.method == 'POST':
         messages.error(request, 'Revisa los datos del formulario.')
 
-    return render(request, 'gestion/profesional_form.html', {'form': form, 'inst': inst})
-
+    return render(request, 'gestion/profesional_form.html', {
+        'form': form, 
+        'inst': inst,
+        'config': ConfiguracionSistema.objects.first(),
+    })
 
 # ---------- Disponibilidad ----------
 @login_required
 def gestion_disponibilidad(request):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -697,12 +711,14 @@ def gestion_disponibilidad(request):
         .select_related('empleado')
         .order_by('empleado__first_name', 'dia_semana', 'hora_inicio')
     )
-    return render(request, 'gestion/disponibilidad.html', {'items': items})
-
+    return render(request, 'gestion/disponibilidad.html', {
+        'items': items,
+        'config': ConfiguracionSistema.objects.first(),
+    })
 
 @login_required
 def gestion_disponibilidad_form(request, pk=None):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -717,12 +733,15 @@ def gestion_disponibilidad_form(request, pk=None):
     if request.method == 'POST':
         messages.error(request, 'Revisa los datos del formulario.')
 
-    return render(request, 'gestion/disponibilidad_form.html', {'form': form, 'inst': inst})
-
+    return render(request, 'gestion/disponibilidad_form.html', {
+        'form': form, 
+        'inst': inst,
+        'config': ConfiguracionSistema.objects.first(),
+    })
 
 @login_required
 def gestion_disponibilidad_eliminar(request, pk):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -737,13 +756,14 @@ def gestion_disponibilidad_eliminar(request, pk):
         'obj': item,
         'titulo': 'Eliminar disponibilidad',
         'cancel_url': 'gestion_disponibilidad',
+        'config': ConfiguracionSistema.objects.first(),
     })
 
 
 # ---------- Bloqueos ----------
 @login_required
 def gestion_bloqueos(request):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -752,12 +772,14 @@ def gestion_bloqueos(request):
         .select_related('empleado')
         .order_by('-fecha_inicio')
     )
-    return render(request, 'gestion/bloqueos.html', {'items': items})
-
+    return render(request, 'gestion/bloqueos.html', {
+        'items': items,
+        'config': ConfiguracionSistema.objects.first(),
+    })
 
 @login_required
 def gestion_bloqueo_form(request, pk=None):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -772,12 +794,15 @@ def gestion_bloqueo_form(request, pk=None):
     if request.method == 'POST':
         messages.error(request, 'Revisa los datos del formulario.')
 
-    return render(request, 'gestion/bloqueo_form.html', {'form': form, 'inst': inst})
-
+    return render(request, 'gestion/bloqueo_form.html', {
+        'form': form, 
+        'inst': inst,
+        'config': ConfiguracionSistema.objects.first(),
+    })
 
 @login_required
 def gestion_bloqueo_eliminar(request, pk):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -792,13 +817,14 @@ def gestion_bloqueo_eliminar(request, pk):
         'obj': item,
         'titulo': 'Eliminar bloqueo',
         'cancel_url': 'gestion_bloqueos',
+        'config': ConfiguracionSistema.objects.first(),
     })
 
 
 # ---------- Pagos ----------
 @login_required
 def gestion_pagos(request):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
@@ -813,8 +839,8 @@ def gestion_pagos(request):
     return render(request, 'gestion/pagos.html', {
         'page_obj': page_obj,
         'total': total,
+        'config': ConfiguracionSistema.objects.first(),
     })
-
 
 # ---------- Configuración ----------
 @login_required
