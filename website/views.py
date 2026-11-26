@@ -145,10 +145,6 @@ def calcular_horarios_disponibles(servicio, empleado, fecha_obj):
     return horarios_libres
 
 
-# --------------------------------------------------
-# VISTA DEL PASO 3 (usa la función)
-# --------------------------------------------------
-
 
 # --------------------------------------------------
 # API PARA QUE EL PASO 2 VERIFIQUE ANTES DE AVANZAR
@@ -955,16 +951,6 @@ def api_datos_grafico(request):
 
     data = obtener_datos_grafico(fecha_inicio, fecha_fin, agrupacion)
     return JsonResponse(data)
-
-from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment
-from reportlab.lib.pagesizes import letter
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
-from reportlab.lib.styles import getSampleStyleSheet
-from django.http import HttpResponse
-from django.utils import timezone
-import datetime
 
 @login_required
 def descargar_reporte_excel(request):

@@ -4,16 +4,25 @@ from django.utils import timezone
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from .models import Cita, ConfiguracionSistema, Usuario, Servicio, CitaServicio
 from .models import Servicio, Usuario, Disponibilidad, BloqueoHorario, ConfiguracionSistema
+from django.core.validators import RegexValidator
+
+
+validador_letras = RegexValidator(
+    regex=r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$',
+    message='Este campo solo puede contener letras y espacios. No se permiten números ni caracteres especiales.'
+)
 
 class RegistroClienteForm(UserCreationForm):
     first_name = forms.CharField(
         label='Nombre',
         max_length=50,
+        validators=[validador_letras],
         widget=forms.TextInput(attrs={'class': 'form-input'}),
     )
     last_name = forms.CharField(
         label='Apellido',
         max_length=50,
+        validators=[validador_letras],
         widget=forms.TextInput(attrs={'class': 'form-input'}),
     )
     rut = forms.CharField(
