@@ -25,24 +25,28 @@
             <a href="{% url 'gestion_citas' %}" class="admin-nav-link {% if 'gestion_cita' in request.resolver_match.url_name %}active{% endif %}">
                 📅 <span>Citas</span>
             </a>
-            <a href="{% url 'gestion_servicios' %}" class="admin-nav-link {% if 'gestion_servicio' in request.resolver_match.url_name %}active{% endif %}">
-                💅 <span>Servicios</span>
-            </a>
-            <a href="{% url 'gestion_profesionales' %}" class="admin-nav-link {% if 'gestion_profesional' in request.resolver_match.url_name %}active{% endif %}">
-                👩 <span>Profesionales</span>
-            </a>
-            <a href="{% url 'gestion_disponibilidad' %}" class="admin-nav-link {% if 'gestion_disponibilidad' in request.resolver_match.url_name %}active{% endif %}">
-                🕐 <span>Disponibilidad</span>
-            </a>
-            <a href="{% url 'gestion_bloqueos' %}" class="admin-nav-link {% if 'gestion_bloqueo' in request.resolver_match.url_name %}active{% endif %}">
-                🚫 <span>Bloqueos</span>
-            </a>
-            <a href="{% url 'gestion_pagos' %}" class="admin-nav-link {% if 'gestion_pago' in request.resolver_match.url_name %}active{% endif %}">
-                💰 <span>Pagos</span>
-            </a>
-            <a href="{% url 'gestion_configuracion' %}" class="admin-nav-link {% if 'gestion_configuracion' in request.resolver_match.url_name %}active{% endif %}">
-                ⚙️ <span>Configuración</span>
-            </a>
+
+            <!-- SOLO ADMIN O SUPERUSER VEN ESTAS OPCIONES -->
+            {% if request.user.rol == 'admin' or request.user.is_superuser %}
+                <a href="{% url 'gestion_servicios' %}" class="admin-nav-link {% if 'gestion_servicio' in request.resolver_match.url_name %}active{% endif %}">
+                    💅 <span>Servicios</span>
+                </a>
+                <a href="{% url 'gestion_profesionales' %}" class="admin-nav-link {% if 'gestion_profesional' in request.resolver_match.url_name %}active{% endif %}">
+                    👩 <span>Profesionales</span>
+                </a>
+                <a href="{% url 'gestion_disponibilidad' %}" class="admin-nav-link {% if 'gestion_disponibilidad' in request.resolver_match.url_name %}active{% endif %}">
+                    🕐 <span>Disponibilidad</span>
+                </a>
+                <a href="{% url 'gestion_bloqueos' %}" class="admin-nav-link {% if 'gestion_bloqueo' in request.resolver_match.url_name %}active{% endif %}">
+                    🚫 <span>Bloqueos</span>
+                </a>
+                <a href="{% url 'gestion_pagos' %}" class="admin-nav-link {% if 'gestion_pago' in request.resolver_match.url_name %}active{% endif %}">
+                    💰 <span>Pagos</span>
+                </a>
+                <a href="{% url 'gestion_configuracion' %}" class="admin-nav-link {% if 'gestion_configuracion' in request.resolver_match.url_name %}active{% endif %}">
+                    ⚙️ <span>Configuración</span>
+                </a>
+            {% endif %}
         </nav>
 
         <div class="admin-sidebar-footer">
@@ -55,7 +59,7 @@
         <header class="admin-topbar">
             <button class="admin-burger" onclick="document.getElementById('adminSidebar').classList.toggle('open')">☰</button>
             <h2>{% block page_title %}Gestión{% endblock %}</h2>
-            <span class="status-badge">Abono: {{ config.porcentaje_abono|floatformat:0 }}%</span>
+            <span class="status-badge">Abono: {{ config.porcentaje_abono|floatformat:"-2" }}%</span>
         </header>
 
         <main class="admin-content">

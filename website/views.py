@@ -537,24 +537,37 @@ def admin_dashboard(request):
         messages.error(request, 'No tienes permiso para acceder al panel de administración.')
         return redirect('reserva_paso1')
 
-    # Filtramos para NO traer las citas que fueron ocultadas
-    citas = (
+    # 1. Base de la consulta
+    citas_qs = (
         Cita.objects
         .filter(oculta_dashboard=False)
         .select_related('cliente', 'empleado')
         .prefetch_related('servicios')
         .order_by('-fecha_hora_cita')
     )
-    
-    total_citas = Cita.objects.filter(oculta_dashboard=False).count()
-    citas_confirmadas = Cita.objects.filter(oculta_dashboard=False, estado='confirmada').count()
-    citas_canceladas = Cita.objects.filter(oculta_dashboard=False, estado='cancelada').count()
-    citas_hoy = Cita.objects.filter(oculta_dashboard=False, fecha_hora_cita__date=timezone.localdate()).count()
 
+    # 2. Filtro por rol: Si es profesional o admin (pero no superuser), solo ve sus propias citas
+    if not request.user.is_superuser and request.user.rol in ['profesional', 'admin']:
+        citas_qs = citas_qs.filter(empleado=request.user)
+        
+        # También filtramos los contadores para que reflejen solo sus citas
+        base_count = Cita.objects.filter(oculta_dashboard=False, empleado=request.user)
+        total_citas = base_count.count()
+        citas_confirmadas = base_count.filter(estado='confirmada').count()
+        citas_canceladas = base_count.filter(estado='cancelada').count()
+        citas_hoy = base_count.filter(fecha_hora_cita__date=timezone.localdate()).count()
+    else:
+        # Si es superuser, ve todo el sistema
+        total_citas = Cita.objects.filter(oculta_dashboard=False).count()
+        citas_confirmadas = Cita.objects.filter(oculta_dashboard=False, estado='confirmada').count()
+        citas_canceladas = Cita.objects.filter(oculta_dashboard=False, estado='cancelada').count()
+        citas_hoy = Cita.objects.filter(oculta_dashboard=False, fecha_hora_cita__date=timezone.localdate()).count()
+
+    # 3. Datos del gráfico (si es profesional, el gráfico también debería ser solo de sus citas)
     chart_data = obtener_datos_grafico(agrupacion='mes')
 
     return render(request, 'gestion/dashboard.html', {
-        'citas': citas[:10],
+        'citas': citas_qs[:10],
         'config': ConfiguracionSistema.objects.first(),
         'total_citas': total_citas,
         'citas_confirmadas': citas_confirmadas,
@@ -570,13 +583,16 @@ def gestion_citas(request):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 
-    # Aquí NO filtramos por oculta_dashboard, así que salen TODAS las citas en la página general
     qs = (
         Cita.objects
         .select_related('cliente', 'empleado')
         .prefetch_related('servicios')
         .order_by('-fecha_hora_cita')
     )
+
+    # FILTRO CLAVE: Si es profesional, solo ve sus propias citas
+    if not request.user.is_superuser and request.user.rol == 'profesional':
+        qs = qs.filter(empleado=request.user)
 
     q = request.GET.get('q', '').strip()
     if q:
@@ -603,15 +619,13 @@ def gestion_citas(request):
 # ---------- Servicios ----------
 @login_required
 def gestion_servicios(request):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
+    if not (request.user.is_superuser or request.user.rol == 'admin'):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
-        return redirect('reserva_paso1')
-
+        return redirect('admin_dashboard')
     servicios = Servicio.objects.all().order_by('nombre_serv')
-    
     return render(request, 'gestion/servicios.html', {
         'servicios': servicios,
-        'config': ConfiguracionSistema.objects.first(), # <-- ESTA LÍNEA FALTABA
+        'config': ConfiguracionSistema.objects.first(),
     })
 
 @login_required
@@ -824,18 +838,12 @@ def gestion_bloqueo_eliminar(request, pk):
 # ---------- Pagos ----------
 @login_required
 def gestion_pagos(request):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional']):
+    if not (request.user.is_superuser or request.user.rol == 'admin'):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
-        return redirect('reserva_paso1')
-
-    qs = (
-        Pago.objects
-        .select_related('cita', 'cliente')
-        .order_by('-fecha_pago')
-    )
+        return redirect('admin_dashboard')
+    qs = Pago.objects.select_related('cita', 'cliente').order_by('-fecha_pago')
     page_obj = Paginator(qs, 30).get_page(request.GET.get('page'))
     total = qs.aggregate(t=Sum('monto'))['t'] or 0
-
     return render(request, 'gestion/pagos.html', {
         'page_obj': page_obj,
         'total': total,
@@ -845,7 +853,7 @@ def gestion_pagos(request):
 # ---------- Configuración ----------
 @login_required
 def gestion_configuracion(request):
-    if not (request.user.is_superuser or request.user.rol in ['admin', 'profesional', 'estilista']):
+    if not (request.user.is_superuser or request.user.rol == 'admin'):
         messages.error(request, 'No tienes permiso para acceder a esta sección.')
         return redirect('reserva_paso1')
 

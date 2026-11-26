@@ -1,6 +1,8 @@
 {% extends 'base_gestion.html' %}
 {% block title %}Dashboard Estadístico - Gestión{% endblock %}
-{% block page_title %}Dashboard Estadístico{% endblock %}
+{% block page_title %}
+    {% if request.user.rol == 'profesional' %}Mis Citas - Profesional{% else %}Dashboard Estadístico{% endif %}
+{% endblock %}
 
 {% block content %}
 
@@ -13,7 +15,7 @@
         <span>
             <small>CITAS HOY</small>
             <strong>{{ citas_hoy }}</strong>
-            <em>Agendadas</em>
+            <em>{% if request.user.rol == 'profesional' %}Tus citas para hoy{% else %}Agendadas{% endif %}</em>
         </span>
     </div>
     <div class="stat-card">
@@ -21,7 +23,7 @@
         <span>
             <small>CONFIRMADAS</small>
             <strong>{{ citas_confirmadas }}</strong>
-            <em>Histórico</em>
+            <em>{% if request.user.rol == 'profesional' %}Tus citas{% else %}Histórico{% endif %}</em>
         </span>
     </div>
     <div class="stat-card">
@@ -29,7 +31,7 @@
         <span>
             <small>CANCELADAS</small>
             <strong>{{ citas_canceladas }}</strong>
-            <em>Histórico</em>
+            <em>{% if request.user.rol == 'profesional' %}Tus cancelaciones{% else %}Histórico{% endif %}</em>
         </span>
     </div>
     <div class="stat-card">
@@ -37,7 +39,7 @@
         <span>
             <small>TOTAL CITAS</small>
             <strong>{{ total_citas }}</strong>
-            <em>Sistema</em>
+            <em>{% if request.user.rol == 'profesional' %}Tus citas{% else %}Sistema{% endif %}</em>
         </span>
     </div>
 </div>
@@ -48,7 +50,9 @@
 <div class="agenda-card report-section-card">
     
     <div class="report-header-block">
-        <h3 class="report-title">Comparativa de Citas</h3>
+        <h3 class="report-title">
+            {% if request.user.rol == 'profesional' %}Mis Citas (Comparativa){% else %}Comparativa de Citas{% endif %}
+        </h3>
         
         <!-- Contenedor de los controles (Select + Botones) -->
         <div class="report-controls">
@@ -93,7 +97,9 @@
 <!-- ========================================== -->
 <div class="agenda-card">
     <div class="report-header-block" style="padding: 16px 20px; border-bottom: 1px solid var(--line); margin: 0;">
-        <h2 style="margin: 0; font-size: 18px;">Últimas reservas</h2>
+        <h2 style="margin: 0; font-size: 18px;">
+            {% if request.user.rol == 'profesional' %}Mis próximas reservas{% else %}Últimas reservas{% endif %}
+        </h2>
         <a href="{% url 'gestion_citas' %}" class="btn btn-secondary btn-sm">Ver todas</a>
     </div>
     
@@ -146,7 +152,7 @@
             .catch(error => console.error('Error:', error));
     }
 
-        function cambiarPeriodo() {
+    function cambiarPeriodo() {
         const periodo = document.getElementById('filtroPeriodo').value;
         const contenedorRango = document.getElementById('contenedorRango');
         
