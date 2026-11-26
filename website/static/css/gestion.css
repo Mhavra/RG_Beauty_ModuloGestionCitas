@@ -71,11 +71,10 @@ body.admin-body {
     flex: 1;
 }
 
-/* Tarjeta para formularios (esto soluciona el achicamiento) */
 .admin-content .agenda-card {
     width: 100%;
     max-width: 100%;
-    padding: 32px; /* Da aire a los formularios */
+    padding: 32px;
     box-sizing: border-box;
 }
 
@@ -86,15 +85,9 @@ body.admin-body {
     gap: 24px;
     width: 100%;
 }
-.admin-form-grid .form-group {
-    width: 100%;
-}
-.admin-form-grid .form-group.full {
-    grid-column: 1 / -1;
-}
-.admin-form-grid input, 
-.admin-form-grid select, 
-.admin-form-grid textarea {
+.admin-form-grid .form-group { width: 100%; }
+.admin-form-grid .form-group.full { grid-column: 1 / -1; }
+.admin-form-grid input, .admin-form-grid select, .admin-form-grid textarea {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
@@ -111,7 +104,7 @@ body.admin-body {
 .admin-content .data-table th, .admin-content .data-table td { padding: 16px; font-size: 14px; }
 .admin-toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 24px; }
 
-/* RESPONSIVE (Tablet y Móvil) */
+/* RESPONSIVE */
 @media (max-width: 900px) {
     .admin-sidebar { position: fixed; transform: translateX(-100%); z-index: 1000; box-shadow: 4px 0 24px rgba(0,0,0,.1); }
     .admin-sidebar.open { transform: translateX(0); }
@@ -119,4 +112,142 @@ body.admin-body {
     .admin-content { padding: 20px; }
     .admin-topbar { padding: 16px 20px; }
     .admin-form-grid { grid-template-columns: 1fr; }
+}
+
+/* Checkbox list */
+.checkbox-list {
+    list-style: none;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 8px;
+    background: var(--canvas);
+    border-radius: 10px;
+    border: 1px solid var(--line);
+}
+.checkbox-list li { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.checkbox-list input[type="checkbox"] { width: 18px; height: 18px; margin: 0; cursor: pointer; accent-color: var(--rose-deep); }
+
+/* Botones de acción en tabla */
+.action-form { display: flex; gap: 4px; }
+.btn-action-complete { background: #edf8f2; color: #2d6a4f; border: 1px solid #a6d8bd; }
+.btn-action-no-show { background: #f8f9fa; color: #716c70; border: 1px solid #ebe7e8; }
+.btn-action-cancel { background: #fff1f1; color: #8a2c2c; border: 1px solid #f3cdcd; }
+.btn-action-delete { background: #fff1f1; color: #8a2c2c; border: 1px solid #f3cdcd; }
+
+/* ==========================================
+   DASHBOARD - CONTROLES Y GRÁFICO
+   ========================================== */
+
+.report-section-card {
+    padding: 24px !important;
+    margin-bottom: 24px !important;
+}
+
+.report-header-block {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 16px !important;
+    margin-bottom: 24px !important;
+}
+
+.report-title {
+    margin: 0 !important;
+    font-family: 'Playfair Display', serif !important;
+    font-size: 22px !important;
+}
+
+.report-controls {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+}
+
+/* SELECT */
+.report-select {
+    width: auto !important;
+    min-width: 200px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    padding: 0 16px !important;
+    margin: 0 !important;
+    background-color: #ffffff !important;
+    border: 1px solid #ebe7e8 !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    cursor: pointer !important;
+}
+
+/* BOTONES */
+.report-controls .btn-sm {
+    height: 42px !important;
+    min-height: 42px !important;
+    padding: 0 16px !important;
+    border: 1px solid #ebe7e8 !important;
+    background: #ffffff !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #222222 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+}
+
+/* CONTENEDOR DE FECHAS (Oculto) */
+.report-date-range {
+    display: none !important; 
+    gap: 16px !important;
+    align-items: flex-end !important;
+    background: #f8f9fa !important;
+    padding: 16px !important;
+    border-radius: 12px !important;
+    border: 1px solid #ebe7e8 !important;
+    flex-wrap: wrap !important;
+    margin-bottom: 24px !important;
+}
+
+/* Clase para mostrar fechas */
+.report-date-range.active-dates {
+    display: flex !important;
+}
+
+.report-date-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    flex: 1 !important;
+    min-width: 150px !important;
+}
+
+.report-date-input {
+    width: 100% !important;
+    max-width: 250px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    padding: 0 12px !important;
+    margin: 0 !important;
+    border: 1px solid #ebe7e8 !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+}
+
+.report-btn-apply {
+    height: 42px !important;
+    min-height: 42px !important;
+    padding: 0 20px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.report-chart-container {
+    position: relative !important;
+    height: 350px !important;
+    width: 100% !important;
 }

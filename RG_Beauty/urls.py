@@ -84,6 +84,11 @@ urlpatterns = [
 
     # --- Configuración del sistema ---
     path('gestion/configuracion/', views.gestion_configuracion, name='gestion_configuracion'),
+
+    path('api/datos-grafico/', views.api_datos_grafico, name='api_datos_grafico'),
+
+    path('gestion/descargar/excel/', views.descargar_reporte_excel, name='descargar_reporte_excel'),
+path('gestion/descargar/pdf/', views.descargar_reporte_pdf, name='descargar_reporte_pdf'),
 ]
 
 if settings.DEBUG:

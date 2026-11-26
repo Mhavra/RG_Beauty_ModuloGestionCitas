@@ -194,9 +194,11 @@ class ProfesionalForm(forms.ModelForm):
         required=False,
         label="Servicios que ofrece este profesional"
     )
+    
     class Meta:
         model = Usuario
-        fields = ['username', 'first_name', 'last_name', 'email', 'telefono', 'rol']
+        # SE AGREGA 'servicios_asignados' AQUI
+        fields = ['username', 'first_name', 'last_name', 'email', 'telefono', 'rol', 'servicios_asignados']
         widgets = {
             'username': forms.TextInput(attrs={'class': 'form-input'}),
             'first_name': forms.TextInput(attrs={'class': 'form-input'}),
@@ -222,7 +224,7 @@ class ProfesionalForm(forms.ModelForm):
             user.set_unusable_password()
         if commit:
             user.save()
-            self.save_m2m()
+            self.save_m2m() # <-- IMPORTANTE: Guarda los servicios
         return user
 
 class DisponibilidadForm(forms.ModelForm):

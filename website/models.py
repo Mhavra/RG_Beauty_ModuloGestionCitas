@@ -107,7 +107,7 @@ class ConfiguracionSistema(models.Model):
 
 
 class Servicio(models.Model):
-    nombre_serv = models.CharField(max_length=100, verbose_name="Nombre del servicio")
+    nombre_serv = models.CharField(max_length=100, unique=True, verbose_name="Nombre del servicio")
     duracion_minutos = models.PositiveIntegerField(validators=[MinValueValidator(15)], 
     verbose_name="Duracion(minutos)", help_text="Duracion real en minutos (ej:90 oara corte, 300 para mechas).")
     precio_serv = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)],
@@ -248,6 +248,9 @@ class Cita(models.Model):
     )
 
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
+    
+    # NUEVO CAMPO: Ocultar del dashboard
+    oculta_dashboard = models.BooleanField(default=False, verbose_name="Ocultar del Dashboard")
 
     class Meta:
         verbose_name = "Cita"

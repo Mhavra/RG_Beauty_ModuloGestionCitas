@@ -58,6 +58,8 @@ python manage.py migrate
 python manage.py runserver
 ```
 
+
+
 Configurar la base de datos en RG_Beauty/settings.py (usuario, contraseña y nombre de la BD en MySQL).
 
 Ejecutar migraciones: python manage.py makemigrations y python manage.py migrate
