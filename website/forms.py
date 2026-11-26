@@ -179,6 +179,11 @@ class ServicioForm(forms.ModelForm):
             'duracion_minutos': forms.NumberInput(attrs={'class': 'form-input', 'min': 15, 'step': 15}),
             'precio_serv': forms.NumberInput(attrs={'class': 'form-input', 'min': 0, 'step': 1000}),
         }
+        error_messages = {
+            'nombre_serv': {
+                'unique': 'Ya existe un servicio con este nombre. Por favor, elige otro.',
+            }
+        }
 
 class ProfesionalForm(forms.ModelForm):
     password = forms.CharField(

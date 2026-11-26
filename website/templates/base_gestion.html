@@ -55,7 +55,7 @@
         <header class="admin-topbar">
             <button class="admin-burger" onclick="document.getElementById('adminSidebar').classList.toggle('open')">☰</button>
             <h2>{% block page_title %}Gestión{% endblock %}</h2>
-            <span class="status-badge">Abono: {{ config.porcentaje_abono|default:"50" }}%</span>
+            <span class="status-badge">Abono: {{ config.porcentaje_abono|floatformat:0 }}%</span>
         </header>
 
         <main class="admin-content">
