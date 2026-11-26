@@ -19,7 +19,6 @@ class Usuario(AbstractUser):
         ('cliente', 'Cliente'),
         ('profesional', 'Profesional'),
         ('admin', 'Administradora'),
-        ('estilista', 'Estilista'),
     )
     #email personalizado para que tengan uno unico para iniciar sesion como otra opcion
     email =models.EmailField(
@@ -41,6 +40,15 @@ class Usuario(AbstractUser):
         verbose_name='Numero de telefono (+569)',
         help_text='Formato: +56912345678'
         )
+
+
+    servicios_asignados = models.ManyToManyField(
+        'Servicio',
+        blank=True,
+        related_name='profesionales_capacitados',
+        verbose_name="SErvicios que ofrece",
+        help_text="Solo aplica para profesionales. Marca los servicios que este profesional puede realizar"
+    )
 
     #campo json nativo para preferencias esteticas e historial estetico
 
